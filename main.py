@@ -63,9 +63,10 @@ def getRankingSimilarity(ranking1 : List[int], ranking2 : List[int]) -> float:
     return cosineDistance(getPositionsVector(ranking1), getPositionsVector(ranking2))
 
 class Tournament:
-    def __init__(self, strengths : np.ndarray, eloFunc=lambda x: 1/(1+10**(x/400))):
+    def __init__(self, strengths : np.ndarray, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1):
         self.strengths = strengths 
         self.eloFunc   = eloFunc
+        self.bestOf    = bestOf
 
         self.isFinished = False
 
@@ -73,10 +74,13 @@ class Tournament:
         self.schedule    = []  # records all the matches that have been played up to this point
         self.resultsList = []  # records all the results (each 0 or 1) of all matches that have already been played
 
-        self.resultsMatrix   = np.zeros([self.numPlayers, self.numPlayers])
-        self.eloScores       = [1000 for i in range(self.numPlayers)]
-        self.winRates        = np.zeros([self.numPlayers, self.numPlayers])
-        self.winRatesLaplace = np.array([[0 if x==y else 0.5 for x in range(self.numPlayers)] for y in range(self.numPlayers)])
+        self.resultsMatrix    = np.zeros([self.numPlayers, self.numPlayers])
+        self.eloScores        = [1000 for i in range(self.numPlayers)]
+        self.eloScoresHistory = [self.eloScores.copy()]
+        self.winRates         = np.zeros([self.numPlayers, self.numPlayers])
+        self.winRatesLaplace  = np.array([[0 if x==y else 0.5 for x in range(self.numPlayers)] for y in range(self.numPlayers)])
+
+        self.verbose = True
 
     def getNextMatch(self) -> List[int]:
         '''Should return a size-2 list containing the two competitors (i.e. 2 ints) playing the next match. If no more matches in schedule, then return None.
@@ -86,43 +90,73 @@ class Tournament:
     def runNextMatch(self):
         '''Runs the next match, updates the schedule, resultsList, resultsMatrix, eloScores, winRates, winRatesLaplace.'''
         match = self.getNextMatch()
-        self.schedule.append(match)
         
         if match is None:
             self.isFinished = True
         else:
+            result = self.getMatchResult(match)
+            self.updateStats(match, result)
+
+    def getMatchResult(self, match : List[int]):
+        cumulativeScore = 0
+        for _ in range(self.bestOf):
             outcome = random.random()
 
             # We set result to 0 if match[0] wins, and 1 if match[1] wins
-            result = 0 if outcome <= self.strengths[match[0], match[1]] else 1
-            self.resultsList.append(result)
+            singleResult = 0 if outcome <= self.strengths[match[0], match[1]] else 1
+            cumulativeScore += singleResult
 
-            # These might help to follow along with the rest of this method
-            winner = match[result]
-            loser  = match[1-result]
+        result = 0 if cumulativeScore < self.bestOf/2 else 1
 
+        return result
+
+    def updateStats(self, match : List[int], result : int):
+        self.schedule.append(match)
+        self.resultsList.append(result)
+
+        # These might help to follow along with the rest of this method
+        winner = match[result]
+        loser  = match[1-result]
+
+        if self.verbose:
             print(f"{winner} beat {loser}")
-            
-            # Now to update the state of the tournament
-            # First update the results matrix
-            self.resultsMatrix[winner, loser] += 1
+        
+        # Now to update the state of the tournament
+        # First update the results matrix
+        self.resultsMatrix[winner, loser] += 1
 
-            # Then the Elo scores
-            eloDifference      = self.eloScores[winner] - self.eloScores[loser]
-            pointsTransfer     = self.eloFunc(eloDifference)
-            self.eloScores[winner] += 25*pointsTransfer
-            self.eloScores[loser]  -= 25*pointsTransfer
+        # Then the Elo scores
+        eloDifference      = self.eloScores[winner] - self.eloScores[loser]
+        pointsTransfer     = self.eloFunc(eloDifference)
+        self.eloScores[winner] += 25*pointsTransfer
+        self.eloScores[loser]  -= 25*pointsTransfer
 
-            # Finally the win rates matrix and the win rates matrix with Laplace succession
-            self.winRates[winner, loser] = self.resultsMatrix[winner, loser] / (self.resultsMatrix[winner, loser] + self.resultsMatrix[loser, winner])
-            self.winRates[loser, winner] = self.resultsMatrix[loser, winner] / (self.resultsMatrix[winner, loser] + self.resultsMatrix[loser, winner])
+        self.eloScoresHistory.append(self.eloScores.copy())
 
-            self.winRatesLaplace[winner, loser] = (1 + self.resultsMatrix[winner, loser]) / (2 + self.resultsMatrix[winner, loser] + self.resultsMatrix[loser, winner])
-            self.winRatesLaplace[loser, winner] = (1 + self.resultsMatrix[loser, winner]) / (2 + self.resultsMatrix[winner, loser] + self.resultsMatrix[loser, winner])
+        # Finally the win rates matrix and the win rates matrix with Laplace succession
+        self.winRates[winner, loser] = self.resultsMatrix[winner, loser] / (self.resultsMatrix[winner, loser] + self.resultsMatrix[loser, winner])
+        self.winRates[loser, winner] = self.resultsMatrix[loser, winner] / (self.resultsMatrix[winner, loser] + self.resultsMatrix[loser, winner])
 
+        self.winRatesLaplace[winner, loser] = (1 + self.resultsMatrix[winner, loser]) / (2 + self.resultsMatrix[winner, loser] + self.resultsMatrix[loser, winner])
+        self.winRatesLaplace[loser, winner] = (1 + self.resultsMatrix[loser, winner]) / (2 + self.resultsMatrix[winner, loser] + self.resultsMatrix[loser, winner])     
+
+    def runAllMatches(self):
+        '''This method will be overridden in many of the tournament systems where it doesn't make sense to have a getNextMatch() method (e.g. in sorting algorithm-based tournaments)'''
+        while not self.isFinished:
+            self.runNextMatch()
+    
     def getTotalWins(self) -> List[int]:
         '''Returns a list of the total number of wins that each player has achieved.'''
         return [sum(x) for x in self.resultsMatrix]
+
+    def getTotalWinsHistory(self) -> List[List[int]]:
+        '''Returns a list of lists of the total wins of each player after each match is played.'''
+        currentTotalWins = [0 for i in range(self.numPlayers)]
+        history = [currentTotalWins.copy()]
+        for i, m in enumerate(self.schedule):
+            currentTotalWins[m[self.resultsList[i]]] += 1
+            history.append(currentTotalWins.copy())
+        return history
     
     def getRanking(self) -> List[int]:
         '''Returns a ranked list of the players according to the specifics of the tournament system.
@@ -173,8 +207,8 @@ class Tournament:
         return ranking, sorted(averageWinRate, reverse=True)
 
 class RoundRobin(Tournament):
-    def __init__(self, strengths, numFolds, eloFunc=lambda x: 1/(1+10**(x/400))):
-        super().__init__(strengths, eloFunc)
+    def __init__(self, strengths, numFolds, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1):
+        super().__init__(strengths, eloFunc, bestOf)
         self.numFolds = numFolds
         
         self.matchesToBePlayed = self.generateAllMatches()
@@ -196,7 +230,7 @@ class RoundRobin(Tournament):
 
     def getRanking(self) -> (List[int], List[int]):
         if self.isFinished:
-            return self.getTotalWinRanking()
+            return self.getTotalWinRanking()[0]
         else:
             print("Not finished yet.")  #TODO: change this
 
@@ -240,8 +274,8 @@ class SingleEliminationRound(Tournament):
         return losers
 
 class SingleElimination2(Tournament):
-    def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400))):
-        super().__init__(strengths, eloFunc)
+    def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1):
+        super().__init__(strengths, eloFunc, bestOf)
         self.currentRound = SingleEliminationRound(strengths, list(range(self.numPlayers)), eloFunc)
 
     def getNextMatch(self) -> List[int]:
@@ -262,13 +296,13 @@ class SingleElimination2(Tournament):
 
     def getRanking(self) -> (List[int], List[int]):
         if self.isFinished:
-            return self.getTotalWinRanking()
+            return self.getTotalWinRanking()[0]
         else:
             print("Not finished yet.")  #TODO: change this
 
 class DoubleElimination2(Tournament):
-    def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400))):
-        super().__init__(strengths, eloFunc)
+    def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1):
+        super().__init__(strengths, eloFunc, bestOf)
         self.currentWinnerRound = SingleEliminationRound(strengths, list(range(self.numPlayers)), eloFunc)
         self.currentLoserRound  = None
 
@@ -377,7 +411,7 @@ class DoubleElimination2(Tournament):
 
     def getRanking(self) -> (List[int], List[int]):
         if self.isFinished:
-            return self.getTotalWinRanking()
+            return self.getTotalWinRanking()[0]
         else:
             print("Not finished yet.")  #TODO: change this
 
@@ -505,19 +539,95 @@ class DoubleElimination(Tournament):
             print("Not finished yet.")  #TODO: change this
 
 class SortingAlgorithm(Tournament):
-    pass
+    def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1):
+        super().__init__(strengths, eloFunc, bestOf)
+
+        self.ranking = list(range(self.numPlayers))
+        random.shuffle(self.ranking)  # probably not necessary to shuffle them but will do it just in case since strength generation of each player isn't entirely independent
+
+    def getRanking(self) -> List[int]:
+        return self.ranking
+
+class InsertionSort(SortingAlgorithm):
+    def runAllMatches(self):
+        '''Will run through the whole tournament (i.e. algorithm) running each comparison as a match with self.getMatchResult() and self.updateStats()'''
+        newRanking = [self.ranking[0]]
+        for x in self.ranking[1:]:
+            inserted = False
+            for i, y in enumerate(newRanking):
+                result = self.getMatchResult([x,y])
+                self.updateStats([x,y], result)
+                if result == 0:
+                    newRanking.insert(i, x)
+                    inserted = True
+                    break
+            if not inserted:
+                newRanking.append(x)
+        self.ranking = newRanking
+
+class BinaryInsertionSort(SortingAlgorithm):
+    def runAllMatches(self):
+        '''Will run through the whole tournament (i.e. algorithm) running each comparison as a match with self.getMatchResult() and self.updateStats()'''
+        print(self.ranking)
+        newRanking = [self.ranking[0]]
+        for x in self.ranking[1:]:
+            print(newRanking)
+            n    = len(newRanking)
+            low  = 0
+            high = n
+            while low < high:
+                mid  = (high+low)//2
+                result = self.getMatchResult([x, newRanking[mid]])
+                self.updateStats([x, newRanking[mid]], result)
+                if result == 0:
+                    high = mid
+                else:
+                    low  = mid+1
+                print(f"x={x}, l={low}, m={mid}, h={high}")
+
+            newRanking.insert(high, x)
+        self.ranking = newRanking
+        print(self.ranking)
+
+class BubbleSort(SortingAlgorithm):
+    def runAllMatches(self):
+        '''Will run through the whole tournament (i.e. algorithm) running each comparison as a match with self.getMatchResult() and self.updateStats()'''
+        n = self.numPlayers
+        while n > 1:
+            m = 0
+            for i in range(1, n):
+                x = self.ranking[i-1]
+                y = self.ranking[i]
+
+                result = self.getMatchResult([x,y])
+                self.updateStats([x,y], result)
+
+                if result == 1:
+                    # swap the two players
+                    temp = x
+                    self.ranking[i-1] = y
+                    self.ranking[i]   = temp
+                    m = i
+            n = m
+
+            
 
 def runTournament(tournament : Tournament, graphStep=1):
-    totalWinsHistory = []
-    eloScoresHistory = []
+    # totalWinsHistory = []
+    # eloScoresHistory = []
 
-    while not tournament.isFinished:
-        totalWinsHistory.append(tournament.getTotalWins())
-        eloScoresHistory.append(tournament.eloScores.copy())
+    # while not tournament.isFinished:
+    #     totalWinsHistory.append(tournament.getTotalWins())
+    #     eloScoresHistory.append(tournament.eloScores.copy())
 
-        tournament.runNextMatch()
+    #     tournament.runNextMatch()
+
+    tournament.runAllMatches()
 
     # TODO: Clean up this monstrosity (USE PANDAS DATAFRAMES)
+    totalWinsHistory = tournament.getTotalWinsHistory()
+    eloScoresHistory = tournament.eloScoresHistory
+
     strPlayers, strNumbers   = getAverageStrengthRanking(tournament.strengths)
     winPlayers, winNumbers   = tournament.getTotalWinRanking()
     eloPlayers, eloNumbers   = tournament.getEloRanking()
@@ -525,13 +635,14 @@ def runTournament(tournament : Tournament, graphStep=1):
     awrlPlayers, awrlNumbers = tournament.getAverageWinRateLaplaceRanking()
 
     trueRanking = getTrueRanking(tournament.strengths)
+    predictedRanking = tournament.getRanking()
 
-    print("Rank   True   Player (Str)   Player (Wins)   Player (Elos)   Player (AWR)   Player (AWRL)")
-    print("-----------------------------------------------------------------------------------------")
+    print("Rank |  True   Predicted   Player (Str)   Player (Wins)   Player (Elos)   Player (AWR)   Player (AWRL)")
+    print("------------------------------------------------------------------------------------------------------")
     for i in range(tournament.numPlayers):
-        print(f" {i+1:2}     {trueRanking[i]:2}     {strPlayers[i]:2} ({strNumbers[i]:.2f})      {winPlayers[i]:2} ({winNumbers[i]})       {eloPlayers[i]:2} ({eloNumbers[i]:7.2f})    {awrPlayers[i]:2} ({awrNumbers[i]:.2f})      {awrlPlayers[i]:2} ({awrlNumbers[i]:.2f})")
+        print(f" {i+1:2}  |   {trueRanking[i]:2}       {predictedRanking[i]:2}       {strPlayers[i]:2} ({strNumbers[i]:.2f})      {winPlayers[i]:2} ({winNumbers[i]:4})       {eloPlayers[i]:2} ({eloNumbers[i]:7.2f})    {awrPlayers[i]:2} ({awrNumbers[i]:.2f})      {awrlPlayers[i]:2} ({awrlNumbers[i]:.2f})")
         
-    print(f"Cosine similarities to true ranking:\nStrs: {getRankingSimilarity(trueRanking, strPlayers)}\nWins: {getRankingSimilarity(trueRanking, winPlayers)}\nElos: {getRankingSimilarity(trueRanking, eloPlayers)}")
+    print(f"Cosine similarities to true ranking:\nPred: {getRankingSimilarity(trueRanking, predictedRanking)}\nStrs: {getRankingSimilarity(trueRanking, strPlayers)}\nWins: {getRankingSimilarity(trueRanking, winPlayers)}\nElos: {getRankingSimilarity(trueRanking, eloPlayers)}")
 
     totalWinsHistory = totalWinsHistory[::graphStep]
     eloScoresHistory = eloScoresHistory[::graphStep]
@@ -557,13 +668,17 @@ strengths = generateStrengths(8)
 # RR = RoundRobin(strengths, 64)
 # runTournament(RR, graphStep=180)
 
-# SE = SingleElimination(strengths)
-# runTournament(SE)
-
 # SE2 = SingleElimination2(strengths)
 # runTournament(SE2)
 
-DE2 = DoubleElimination2(strengths)
-runTournament(DE2)
+# DE2 = DoubleElimination2(strengths)
+# runTournament(DE2)
 
-print(getRankingSimilarity([0,1,2,3,4,5,6,7], [7,6,5,4,3,2,1,0]))
+# IS = InsertionSort(strengths, bestOf=7)
+# runTournament(IS)
+
+BIS = BinaryInsertionSort(strengths, bestOf=3)
+runTournament(BIS)
+
+# BS = BubbleSort(strengths, bestOf=99)
+# runTournament(BS)
