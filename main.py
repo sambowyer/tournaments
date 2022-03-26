@@ -545,6 +545,11 @@ class SortingAlgorithm(Tournament):
         self.ranking = list(range(self.numPlayers))
         random.shuffle(self.ranking)  # probably not necessary to shuffle them but will do it just in case since strength generation of each player isn't entirely independent
 
+    def swapPlayerRanks(self, index1 : int, index2 : int):
+        temp = self.ranking[index1]
+        self.ranking[index1] = self.ranking[index2]
+        self.ranking[index2] = temp
+
     def getRanking(self) -> List[int]:
         return self.ranking
 
@@ -568,10 +573,10 @@ class InsertionSort(SortingAlgorithm):
 class BinaryInsertionSort(SortingAlgorithm):
     def runAllMatches(self):
         '''Will run through the whole tournament (i.e. algorithm) running each comparison as a match with self.getMatchResult() and self.updateStats()'''
-        print(self.ranking)
+        # print(self.ranking)
         newRanking = [self.ranking[0]]
         for x in self.ranking[1:]:
-            print(newRanking)
+            # print(newRanking)
             n    = len(newRanking)
             low  = 0
             high = n
@@ -583,11 +588,11 @@ class BinaryInsertionSort(SortingAlgorithm):
                     high = mid
                 else:
                     low  = mid+1
-                print(f"x={x}, l={low}, m={mid}, h={high}")
+                # print(f"x={x}, l={low}, m={mid}, h={high}")
 
             newRanking.insert(high, x)
         self.ranking = newRanking
-        print(self.ranking)
+        # print(self.ranking)
 
 class BubbleSort(SortingAlgorithm):
     def runAllMatches(self):
@@ -604,13 +609,112 @@ class BubbleSort(SortingAlgorithm):
 
                 if result == 1:
                     # swap the two players
-                    temp = x
-                    self.ranking[i-1] = y
-                    self.ranking[i]   = temp
+                    self.swapPlayerRanks(i-1, i)
+                    # temp = x
+                    # self.ranking[i-1] = y
+                    # self.ranking[i]   = temp
                     m = i
             n = m
 
-            
+class SelectionSort(SortingAlgorithm):
+    def runAllMatches(self):
+        '''Will run through the whole tournament (i.e. algorithm) running each comparison as a match with self.getMatchResult() and self.updateStats()'''
+        for i in range(self.numPlayers-1):
+            # print(self.ranking)
+            k = i
+            for j in range(i+1, self.numPlayers):
+                x = self.ranking[k]
+                y = self.ranking[j]
+
+                result = self.getMatchResult([x,y])
+                self.updateStats([x,y], result)
+
+                if result == 1:
+                    k = j
+
+            # swap the two players at index k and index i
+            self.swapPlayerRanks(k, i)
+            # temp = self.ranking[k]
+            # self.ranking[k] = self.ranking[i]
+            # self.ranking[i] = temp
+        # print(self.ranking)
+
+class QuickSort(SortingAlgorithm):
+    def runAllMatches(self):
+        '''Will run through the whole tournament (i.e. algorithm) running each comparison as a match with self.getMatchResult() and self.updateStats()'''
+        # print(self.ranking)
+        self.ranking = self.quicksort(self.ranking, 0, self.numPlayers-1)
+
+    def quicksort(self, arr : List[int], left : int, right : int) -> List[int]:
+        if left < right:
+            pivotIndex, arr = self.partition(arr, left, right)
+            # print(arr)
+            arr = self.quicksort(arr, left, pivotIndex-1)
+            arr = self.quicksort(arr, pivotIndex+1, right)
+        return arr
+
+    def partition(self, arr : List[int], left : int, right : int) -> (int, List[int]):
+        pivotIndex = (left+right+1)//2
+        pivot      = arr[pivotIndex]
+        
+        winners = []
+        losers  = []
+
+        for i in range(left, right+1):
+            if i == pivotIndex:
+                losers = [arr[i]] + losers
+            else:
+                result = self.getMatchResult([pivot, arr[i]])
+                self.updateStats([pivot, arr[i]], result)
+
+                if result == 0:
+                    losers.append(arr[i])
+                else:
+                    winners.append(arr[i])
+
+        return right-len(losers)+1, arr[:left] + winners + losers + arr[right+1:]
+
+class MergeSort(SortingAlgorithm):
+    def runAllMatches(self):
+        '''Will run through the whole tournament (i.e. algorithm) running each comparison as a match with self.getMatchResult() and self.updateStats()'''
+        print(self.ranking)
+        self.ranking = self.mergesort(self.ranking)
+
+    def mergesort(self, arr : List[int]) -> List[int]:
+        if len(arr) <= 1:
+            return arr
+        
+        left  = self.mergesort(arr[:len(arr)//2])
+        right = self.mergesort(arr[len(arr)//2:])
+
+        return self.merge(left, right)
+
+    def merge(self, left : List[int], right : List[int]) -> List[int]:
+        arr = []
+
+        while len(left) > 0 and len(right) > 0:
+            l = left[0]
+            r = right[0]
+
+            result = self.getMatchResult([l, r])
+            self.updateStats([l, r], result)
+
+            if result == 0:
+                arr.append(l)
+                left = left[1:]
+            else:
+                arr.append(r)
+                right = right[1:]
+
+        if len(left) != 0:
+            arr += left
+        if len(right) != 0:
+            arr += right
+
+        print(arr)
+        return arr
+
+
 
 def runTournament(tournament : Tournament, graphStep=1):
     # totalWinsHistory = []
@@ -677,8 +781,17 @@ strengths = generateStrengths(8)
 # IS = InsertionSort(strengths, bestOf=7)
 # runTournament(IS)
 
-BIS = BinaryInsertionSort(strengths, bestOf=3)
-runTournament(BIS)
+# BIS = BinaryInsertionSort(strengths, bestOf=333)
+# runTournament(BIS)
 
 # BS = BubbleSort(strengths, bestOf=99)
 # runTournament(BS)
+
+# SS = SelectionSort(strengths, bestOf=3)
+# runTournament(SS)
+
+# QS = QuickSort(strengths, bestOf=333)
+# runTournament(QS)
+
+MS = MergeSort(strengths, bestOf=3)
+runTournament(MS)
