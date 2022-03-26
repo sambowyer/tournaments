@@ -538,6 +538,43 @@ class DoubleElimination(Tournament):
         else:
             print("Not finished yet.")  #TODO: change this
 
+class Swiss(Tournament):
+    def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1):
+        super().__init__(strengths, eloFunc, bestOf)
+
+        self.ranking = list(range(self.numPlayers)) 
+        random.shuffle(self.ranking)  # probably not necessary to shuffle them but will do it just in case since strength generation of each player isn't entirely independent
+
+    def runAllMatches(self):
+        for _ in range(int(math.log2(self.numPlayers))):
+            tempRanking = self.ranking.copy()
+            roundSchedule = []
+
+            while len(tempRanking) != 0:
+                x = tempRanking[0]
+                for i, y in enumerate(tempRanking[1:]):
+                    if [x,y] not in self.schedule and [y,x] not in self.schedule:
+                        roundSchedule.append([x,y])
+                        tempRanking = tempRanking[1:i+1] + tempRanking[i+2:]
+                        break
+            
+            # print(roundSchedule)
+
+            for m in roundSchedule:
+                result = self.getMatchResult(m)
+                self.updateStats(m, result)
+
+            totalWins = self.getTotalWins()
+            self.ranking = sorted(self.ranking, key = lambda x: totalWins[x], reverse=True)
+            # we do this rather than:
+            #   self.ranking, _ = self.getTotalWinRanking()
+            # since getTotalWinRanking() places players with the same number of wins in (ascending) order of their names 
+
+            # print(self.ranking)
+
+    def getRanking(self) -> (List[int], List[int]):
+        return self.ranking
+
 class SortingAlgorithm(Tournament):
     def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1):
         super().__init__(strengths, eloFunc, bestOf)
@@ -714,7 +751,79 @@ class MergeSort(SortingAlgorithm):
         print(arr)
         return arr
 
+class HeapSort(SortingAlgorithm):
+    def runAllMatches(self):
+        '''Will run through the whole tournament (i.e. algorithm) running each comparison as a match with self.getMatchResult() and self.updateStats()'''
+        # print(self.ranking)
+        self.ranking = self.heapsort(self.ranking, self.numPlayers)[1:]
 
+    def heapsort(self, arr : List[int], n : int) -> List[int]:
+        arr = [-1] + arr
+        arr = self.toHeap(arr, n)
+        for i in range(n, 1, -1):
+            temp   = arr[1]
+            arr[1] = arr[i]
+            arr[i] = temp
+            arr = self.bubbleDown(1, arr, i-1)
+        return arr
+
+    def toHeap(self, arr : List[int], n : int) -> List[int]:
+        for i in range(n//2, 0, -1):
+            arr = self.bubbleDown(i, arr, n)
+        return arr
+
+    def bubbleDown(self, i : int, heap : List[int], n : int) -> List[int]:
+        # print(i, heap, n)
+        if self.heapLeft(i) > n:
+            return heap
+        elif self.heapRight(i) > n:
+            x = heap[i]
+            y = heap[self.heapLeft(i)]
+
+            result = self.getMatchResult([x,y])
+            self.updateStats([x,y], result)
+
+            if result == 0:
+                # swap the two players
+                temp = heap[i]
+                heap[i] = heap[self.heapLeft(i)]
+                heap[self.heapLeft(i)] = temp
+                # self.swapPlayerRanks(i, self.heapLeft(i))
+        else:
+            l = heap[self.heapLeft(i)]
+            r = heap[self.heapRight(i)]
+            x = heap[i]
+
+            resultLR = self.getMatchResult([l,r])
+            self.updateStats([l,r], resultLR)
+
+            resultLX = self.getMatchResult([l,x])
+            self.updateStats([l,x], resultLX)
+
+            if resultLR == 1 and resultLX == 1:
+                temp = heap[i]
+                heap[i] = heap[self.heapLeft(i)]
+                heap[self.heapLeft(i)] = temp
+                # self.swapPlayerRanks(i, self.heapLeft(i))
+                heap = self.bubbleDown(self.heapLeft(i), heap, n)
+            else:
+                resultRX = self.getMatchResult([r,x])
+                self.updateStats([r,x], resultRX)
+
+                if resultRX == 1:
+                    temp = heap[i]
+                    heap[i] = heap[self.heapRight(i)]
+                    heap[self.heapRight(i)] = temp
+                    # self.swapPlayerRanks(i, self.heapRight(i))
+                    heap = self.bubbleDown(self.heapRight(i), heap, n)
+
+        return heap
+
+    def heapLeft(self, i : int) -> int:
+        return 2*i
+
+    def heapRight(self, i : int) -> int:
+        return 2*i + i
 
 def runTournament(tournament : Tournament, graphStep=1):
     # totalWinsHistory = []
@@ -778,6 +887,9 @@ strengths = generateStrengths(8)
 # DE2 = DoubleElimination2(strengths)
 # runTournament(DE2)
 
+# SW = Swiss(strengths)
+# runTournament(SW)
+
 # IS = InsertionSort(strengths, bestOf=7)
 # runTournament(IS)
 
@@ -793,5 +905,8 @@ strengths = generateStrengths(8)
 # QS = QuickSort(strengths, bestOf=333)
 # runTournament(QS)
 
-MS = MergeSort(strengths, bestOf=3)
-runTournament(MS)
+# MS = MergeSort(strengths, bestOf=3)
+# runTournament(MS)
+
+HS = HeapSort(strengths, bestOf=999)
+runTournament(HS)
