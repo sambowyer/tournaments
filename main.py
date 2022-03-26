@@ -273,7 +273,7 @@ class SingleEliminationRound(Tournament):
             losers.append(m[1-results[i]])
         return losers
 
-class SingleElimination2(Tournament):
+class SingleElimination(Tournament):
     def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1):
         super().__init__(strengths, eloFunc, bestOf)
         self.currentRound = SingleEliminationRound(strengths, list(range(self.numPlayers)), eloFunc)
@@ -300,7 +300,7 @@ class SingleElimination2(Tournament):
         else:
             print("Not finished yet.")  #TODO: change this
 
-class DoubleElimination2(Tournament):
+class DoubleElimination(Tournament):
     def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1):
         super().__init__(strengths, eloFunc, bestOf)
         self.currentWinnerRound = SingleEliminationRound(strengths, list(range(self.numPlayers)), eloFunc)
@@ -337,9 +337,9 @@ class DoubleElimination2(Tournament):
                 self.currentWinnerRound = SingleEliminationRound(nextRoundStrengths, winners, self.eloFunc)
                 self.currentTree = "loser"
 
-                with open("aa.txt", "a") as f:
-                    self.wc += 1
-                    f.write(f"wc {self.wc} {len(self.resultsList)}\n")
+                # with open("aa.txt", "a") as f:
+                #     self.wc += 1
+                #     f.write(f"wc {self.wc} {len(self.resultsList)}\n")
 
                 return self.getNextMatch()
 
@@ -361,9 +361,9 @@ class DoubleElimination2(Tournament):
 
                     self.currentLoserRound = None
 
-                    with open("aa.txt", "a") as f:
-                        self.lc += 1
-                        f.write(f"lc {self.lc} {len(self.resultsList)}\n")
+                    # with open("aa.txt", "a") as f:
+                    #     self.lc += 1
+                    #     f.write(f"lc {self.lc} {len(self.resultsList)}\n")
 
                     return self.getNextMatch()
 
@@ -391,9 +391,9 @@ class DoubleElimination2(Tournament):
                     nextRoundStrengths = getStrengthsSubmatrix(strengths, self.successfulLosers)
                     self.currentLoserRound = SingleEliminationRound(nextRoundStrengths, self.successfulLosers)
 
-                    with open("aa.txt", "a") as f:
-                        self.lc += 1
-                        f.write(f"lc {self.lc} {len(self.resultsList)}\n")
+                    # with open("aa.txt", "a") as f:
+                    #     self.lc += 1
+                    #     f.write(f"lc {self.lc} {len(self.resultsList)}\n")
 
                     return self.getNextMatch()
 
@@ -412,129 +412,6 @@ class DoubleElimination2(Tournament):
     def getRanking(self) -> (List[int], List[int]):
         if self.isFinished:
             return self.getTotalWinRanking()[0]
-        else:
-            print("Not finished yet.")  #TODO: change this
-
-class SingleElimination(Tournament):
-    def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400))):
-        super().__init__(strengths, eloFunc)
-        # IMPORTANT: numPlayers must be a power of two
-        self.matchNoThisRound = 0
-        self.currentRoundMatches = self.generateCurrentRoundMatches(list(range(self.numPlayers)))
-
-    def generateCurrentRoundMatches(self, validPlayers : list) -> List[List[int]]:
-        '''Given a list of the player's still in the game, pair them up to generate the matches for the next round.'''
-        if len(validPlayers) == 1:
-            return [None]  # No more matches to be played - we've found the winner
-        else:
-            random.shuffle(validPlayers)
-            nextRoundNumPlayers = int(len(validPlayers)/2)
-
-            return [[validPlayers[i], validPlayers[nextRoundNumPlayers+i]] for i in range(nextRoundNumPlayers)]
-
-    def getPrevRoundWinners(self) -> List[int]:
-        winners = []
-        # print(f"m={self.matchNoThisRound}")
-        for i in range(self.matchNoThisRound):
-            # reverse self.resultsList and self.currentRoundMatches so we only consider the matches from the last round
-            # print(i)
-            winners.append(self.currentRoundMatches[::-1][i][self.resultsList[::-1][i]]) 
-        return winners
-
-    def getPrevRoundLosers(self) -> List[int]:
-        losers = []
-        for i in range(self.matchNoThisRound):
-            # reverse self.resultsList and self.currentRoundMatches so we only consider the matches from the last round
-            losers.append(self.currentRoundMatches[::-1][i][1-self.resultsList[::-1][i]]) 
-        return losers
-
-    def getNextMatch(self) -> List[int]:
-        if self.matchNoThisRound >= len(self.currentRoundMatches):  # i.e. if the current round has finished
-            # Need to figure out which players won in the last round
-            winners = self.getPrevRoundWinners()
-
-            # start the new round with the winners of the previous round
-            self.currentRoundMatches = self.generateCurrentRoundMatches(winners)
-            self.matchNoThisRound = 0
-
-            return self.getNextMatch()
-        else:
-            self.matchNoThisRound += 1
-            return self.currentRoundMatches[self.matchNoThisRound-1]
-
-    def getRanking(self) -> (List[int], List[int]):
-        # Players will only progress to next round if they win the previous round, so we can rank players by who many games they've won
-        if self.isFinished:
-            return self.getTotalWinRanking() 
-        else:
-            print("Not finished yet.")  #TODO: change this
-
-class DoubleElimination(Tournament):
-    def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400))):
-        super().__init__(strengths, eloFunc)
-        # IMPORTANT: numPlayers must be a power of two
-
-        self.mainTree  = SingleElimination(strengths)
-        self.loserTree = None
-
-        self.mainTreeLosersHistory = []  # To keep track of the losing players in successive rounds of the main tree
-
-        self.loserTreeRoundNumber = 0
-
-    def getNextMatch(self) -> List[int]:
-        '''Works by running through the mainTree tournament in its entirety, keeping track of losers in each round, and then constructing the loser's tree from this information.'''
-        self.mainTree.resultsList = self.resultsList.copy()
-        if self.mainTree.matchNoThisRound >= len(self.mainTree.currentRoundMatches):  # I.e. if the current round has finished in the main tree
-            # Need to figure out which players won in the last round
-            print(self.mainTree.resultsList)
-
-            mainTreeWinners = self.mainTree.getPrevRoundWinners()
-
-            self.mainTreeLosersHistory.append(self.mainTree.getPrevRoundLosers())
-
-            # Start the new round with the winners of the previous round
-            self.mainTree.currentRoundMatches = self.mainTree.generateCurrentRoundMatches(mainTreeWinners)
-
-            nextMainTreeMatch = self.mainTree.getNextMatch()
-            if nextMainTreeMatch is not None:
-                self.mainTree.matchNoThisRound = 1
-                return nextMainTreeMatch
-
-            else:  # I.e. the main tree is finished
-                if self.loserTree is None:
-                    # Create the loser tree using just the losers from the main tree in the first round
-                    self.loserTree = SingleElimination(strengths)
-                    self.loserTree.currentRoundMatches = self.loserTree.generateCurrentRoundMatches(self.mainTreeLosersHistory[0])
-                    self.loserTreeRoundNumber += 1
-                    
-
-                elif self.loserTree.matchNoThisRound >= len(self.loserTree.currentRoundMatches):  # I.e. if the current round has finished in the main tree
-                    # Create a new loser tree with matches generated from the winners of the loser tree and losers of the main tree
-                    self.loserTree = SingleElimination(strengths)
-                    self.loserTree.currentRoundMatches = self.generateLoserTreeMatches(self.loserTree.getPrevRoundWinners(), self.mainTreeLosersHistory[self.loserTreeRoundNumber].copy())
-                    # Increment self.loserTreeRoundNumber
-                    self.loserTreeRoundNumber += 1
-
-                self.mainTree.resultsList = self.resultsList.copy()
-                return self.loserTree.getNextMatch()
-        else:
-            self.mainTree.matchNoThisRound += 1
-            print(self.mainTree.currentRoundMatches)
-            return self.mainTree.currentRoundMatches[self.mainTree.matchNoThisRound-1]
-
-    def generateLoserTreeMatches(self, validPlayers1, validPlayers2) -> List[List[int]]:
-        '''Create matches by pairing up players form validPlayers1 (winners from the loser tree) and validPlayers2 (losers from the main tree).'''
-        random.shuffle(validPlayers1)
-        random.shuffle(validPlayers2)
-
-        print(len(validPlayers1), len(validPlayers2))
-
-        return [[validPlayers1[i], validPlayers2[i]] for i in range(len(validPlayers2))]
-
-    def getRanking(self) -> (List[int], List[int]):
-        # TODO: Should main-tree wins be worth more than loser-tree wins in the overall ranking?
-        if self.isFinished:
-            return self.getTotalWinRanking() 
         else:
             print("Not finished yet.")  #TODO: change this
 
@@ -876,16 +753,16 @@ def runTournament(tournament : Tournament, graphStep=1):
     
     plt.show()
 
-strengths = generateStrengths(8)
+strengths = generateStrengths(16)
 
 # RR = RoundRobin(strengths, 64)
 # runTournament(RR, graphStep=180)
 
-# SE2 = SingleElimination2(strengths)
-# runTournament(SE2)
+# SE = SingleElimination(strengths)
+# runTournament(SE)
 
-# DE2 = DoubleElimination2(strengths)
-# runTournament(DE2)
+# DE = DoubleElimination(strengths)
+# runTournament(DE)
 
 # SW = Swiss(strengths)
 # runTournament(SW)
@@ -908,5 +785,5 @@ strengths = generateStrengths(8)
 # MS = MergeSort(strengths, bestOf=3)
 # runTournament(MS)
 
-HS = HeapSort(strengths, bestOf=999)
-runTournament(HS)
+# HS = HeapSort(strengths, bestOf=999)
+# runTournament(HS)
