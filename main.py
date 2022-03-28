@@ -49,10 +49,13 @@ def getAverageStrengthRanking(strengths) -> (List[int], List[float]):
 
     return ranking, sorted(averageStrengths, reverse=True)
 
-def cosineDistance(vec1 : List[int], vec2 : List[int]) -> float:
+def cosineDistance(vec1 : List[int], vec2 : List[int], start=1) -> float:
     '''Returns the cosine distance between two vectors'''
     v1 = np.array(vec1)
     v2 = np.array(vec2)
+    m  = min(v1)
+    v1 += start-m
+    v2 += start-m
     return np.dot(v1,v2)/(np.linalg.norm(v1)*np.linalg.norm(v2))
 
 def getPositionsVector(ranking : List[int]) -> List[int]:
@@ -286,7 +289,7 @@ class SingleElimination(Tournament):
             if len(winners) == 1:  # Tournament has finished
                 return None
                 
-            nextRoundStrengths = getStrengthsSubmatrix(strengths, winners)
+            nextRoundStrengths = getStrengthsSubmatrix(self.strengths, winners)
 
             self.currentRound = SingleEliminationRound(nextRoundStrengths, winners, self.eloFunc)
         
@@ -333,7 +336,7 @@ class DoubleElimination(Tournament):
                     self.winnerTreeWinner = winners[0]
                     self.isWinnerTreeFinished = True
                     
-                nextRoundStrengths = getStrengthsSubmatrix(strengths, winners)
+                nextRoundStrengths = getStrengthsSubmatrix(self.strengths, winners)
                 self.currentWinnerRound = SingleEliminationRound(nextRoundStrengths, winners, self.eloFunc)
                 self.currentTree = "loser"
 
@@ -349,7 +352,7 @@ class DoubleElimination(Tournament):
         
             if self.isLoserOnlyRound:
                 if self.currentLoserRound is None:
-                    nextRoundStrengths = getStrengthsSubmatrix(strengths, self.newLosers)
+                    nextRoundStrengths = getStrengthsSubmatrix(self.strengths, self.newLosers)
                     self.currentLoserRound = SingleEliminationRound(nextRoundStrengths, self.newLosers)
 
                 nextMatch = self.currentLoserRound.getNextMatch()
@@ -372,7 +375,7 @@ class DoubleElimination(Tournament):
             else:
                 if self.currentLoserRound is None:
                     
-                    nextRoundStrengths = getStrengthsSubmatrix(strengths, self.newLosers+self.successfulLosers)
+                    nextRoundStrengths = getStrengthsSubmatrix(self.strengths, self.newLosers+self.successfulLosers)
                     self.currentLoserRound = SingleEliminationRound(nextRoundStrengths, self.newLosers+self.successfulLosers)
 
                 nextMatch = self.currentLoserRound.getNextMatch()
@@ -388,7 +391,7 @@ class DoubleElimination(Tournament):
                     self.isLoserOnlyRound = True
 
                     # Set up the the next round (which purely consists of the winners of this round - i.e. we stay working in the losers tree)
-                    nextRoundStrengths = getStrengthsSubmatrix(strengths, self.successfulLosers)
+                    nextRoundStrengths = getStrengthsSubmatrix(self.strengths, self.successfulLosers)
                     self.currentLoserRound = SingleEliminationRound(nextRoundStrengths, self.successfulLosers)
 
                     # with open("aa.txt", "a") as f:
@@ -591,7 +594,7 @@ class QuickSort(SortingAlgorithm):
 class MergeSort(SortingAlgorithm):
     def runAllMatches(self):
         '''Will run through the whole tournament (i.e. algorithm) running each comparison as a match with self.getMatchResult() and self.updateStats()'''
-        print(self.ranking)
+        # print(self.ranking)
         self.ranking = self.mergesort(self.ranking)
 
     def mergesort(self, arr : List[int]) -> List[int]:
@@ -625,7 +628,7 @@ class MergeSort(SortingAlgorithm):
         if len(right) != 0:
             arr += right
 
-        print(arr)
+        # print(arr)
         return arr
 
 class HeapSort(SortingAlgorithm):
@@ -702,7 +705,7 @@ class HeapSort(SortingAlgorithm):
     def heapRight(self, i : int) -> int:
         return 2*i + i
 
-def runTournament(tournament : Tournament, graphStep=1):
+def runTournament(tournament : Tournament, graphStep=1, title="", filename="", id=0):
     # totalWinsHistory = []
     # eloScoresHistory = []
 
@@ -738,52 +741,242 @@ def runTournament(tournament : Tournament, graphStep=1):
     eloScoresHistory = eloScoresHistory[::graphStep]
     gameNumLabels    = np.arange(len(totalWinsHistory))*graphStep
 
-    ax =plt.subplot(1,2,1)
+    fig = plt.figure(num=id, clear=True)
+
+    ax1 =plt.subplot(1,2,1)
     for player in range(tournament.numPlayers):
         plt.plot(gameNumLabels, [x[player] for x in totalWinsHistory])
 
-    ax.set(xlabel='Game #', ylabel='Number of wins')
+    ax1.set(xlabel='Game #', ylabel='Number of wins')
     plt.legend(range(tournament.numPlayers), loc="upper left")
 
-    ax =plt.subplot(1,2,2)
+    ax2 =plt.subplot(1,2,2)
     for player in range(tournament.numPlayers):
         plt.plot(gameNumLabels, [x[player] for x in eloScoresHistory])
 
-    ax.set(xlabel='Game #', ylabel='Elo rating')
+    ax2.set(xlabel='Game #', ylabel='Elo rating')
     
-    plt.show()
+    fig.suptitle(title)
 
-strengths = generateStrengths(16)
+    fig.set_size_inches(15, 9)
+    
+    if filename == "":
+        plt.show()
+    else:
+        plt.savefig(filename)
 
-# RR = RoundRobin(strengths, 64)
-# runTournament(RR, graphStep=180)
+    f = plt.figure()
+    f.clear()
+    plt.close(f)
 
-# SE = SingleElimination(strengths)
-# runTournament(SE)
+def runTournamentTest():
+    strengths = generateStrengths(8)
 
-# DE = DoubleElimination(strengths)
-# runTournament(DE)
+    count = 0
 
-# SW = Swiss(strengths)
-# runTournament(SW)
+    RR = RoundRobin(strengths, 10)
+    runTournament(RR, title="Round Robin (10-fold)", filename="RR.png", id=count)
+    count += 1
 
-# IS = InsertionSort(strengths, bestOf=7)
-# runTournament(IS)
+    SE = SingleElimination(strengths)
+    runTournament(SE, title="Single Elimination", filename="SE.png", id=count)
+    count += 1
 
-# BIS = BinaryInsertionSort(strengths, bestOf=333)
-# runTournament(BIS)
+    DE = DoubleElimination(strengths)
+    runTournament(DE, title="Double Elimination", filename="DE.png", id=count)
+    count += 1
 
-# BS = BubbleSort(strengths, bestOf=99)
-# runTournament(BS)
+    SW = Swiss(strengths)
+    runTournament(SW, title="Swiss Style", filename="SW.png", id=count)
+    count += 1
 
-# SS = SelectionSort(strengths, bestOf=3)
-# runTournament(SS)
+    IS = InsertionSort(strengths, bestOf=7)
+    runTournament(IS, title="Insertion Sort", filename="IS.png", id=count)
+    count += 1
 
-# QS = QuickSort(strengths, bestOf=333)
-# runTournament(QS)
+    BIS = BinaryInsertionSort(strengths, bestOf=7)
+    runTournament(BIS, title="Binary Insertion Sort", filename="BIS.png", id=count)
+    count += 1
 
-# MS = MergeSort(strengths, bestOf=3)
-# runTournament(MS)
+    BS = BubbleSort(strengths, bestOf=7)
+    runTournament(BS, title="Bubble Sort", filename="BS.png", id=count)
+    count += 1
 
-# HS = HeapSort(strengths, bestOf=999)
-# runTournament(HS)
+    SS = SelectionSort(strengths, bestOf=7)
+    runTournament(SS, title="Selection Sort", filename="SS.png", id=count)
+    count += 1
+
+    QS = QuickSort(strengths, bestOf=7)
+    runTournament(QS, title="Quick Sort", filename="QS.png", id=count)
+    count += 1
+
+    MS = MergeSort(strengths, bestOf=7)
+    runTournament(MS, title="Merge Sort", filename="MS.png", id=count)
+    count += 1
+
+    HS = HeapSort(strengths, bestOf=7)
+    runTournament(HS, title="Heap Sort", filename="HS.png", id=count)
+    count += 1
+
+def makeBarChart(xticks : List[str], yvalues : List, title : str, xlabel : str, ylabel : str, filename : str, yRange=None):
+    fig, ax = plt.subplots()
+    rects1 = ax.bar(xticks, yvalues)
+    ax.set_title(title)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    if yRange is not None:
+        ax.set_ylim(yRange)
+
+    def autolabel(rects):
+        """Attach a text label above each bar in *rects*, displaying its height."""
+        for rect in rects:
+            height = rect.get_height()
+            ax.annotate('{}'.format(height),
+                        xy=(rect.get_x() + rect.get_width() / 3, height),
+                        xytext=(0, 3),  # 3 points vertical offset
+                        textcoords="offset points",
+                        ha='center', va='bottom')
+
+
+    autolabel(rects1)
+
+    # fig.tight_layout()
+    fig.set_size_inches(17, 10)
+
+    plt.savefig(filename)
+
+def makeDoubledBarChart(xticks : List[str], yvalues1 : List, yvalues2 : List, ylabel1 : str, ylabel2 : str, title : str, xlabel : str, ylabel : str, filename : str, yRange=None):
+    fig, ax = plt.subplots()
+    x = np.arange(len(xticks))
+    width=0.35
+    rects1 = ax.bar(x-width/2, yvalues1, width, label=ylabel1)
+    rects2 = ax.bar(x+width/2, yvalues2, width, label=ylabel2)
+    
+    ax.set_title(title)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_xticks(x)
+    ax.set_xticklabels(xticks)
+    ax.legend()
+    if yRange is not None:
+        ax.set_ylim(yRange)
+
+    
+    # ax.bar_label(rects1, padding=3)
+    # ax.bar_label(rects2, padding=3)
+
+    def autolabel(rects):
+        """Attach a text label above each bar in *rects*, displaying its height."""
+        for rect in rects:
+            height = rect.get_height()
+            ax.annotate('{:.3}'.format(height),
+                        xy=(rect.get_x() + rect.get_width() / 3, height),
+                        xytext=(0, 3),  # 3 points vertical offset
+                        textcoords="offset points",
+                        ha='center', va='bottom', rotation=90)
+
+
+    autolabel(rects1)
+    autolabel(rects2)
+
+    # fig.tight_layout()
+
+    fig.set_size_inches(17, 10)
+
+    plt.savefig(filename)
+
+def prelimTest():
+    n = 16
+    numGames = 10000
+
+    tournamentNames = ["RR1", "RR10", "RR100", "SE", "DE", "SW", "IS", "BIS", "BS", "SS", "QS", "MS", "HS", "IS7", "BIS7", "BS7", "SS7", "QS7", "MS7", "HS7"]
+    stats = {}
+    for t in tournamentNames:
+        stats[t] = {"correctPlaces" : [0 for i in range(n)], "cosine" : 0, "eloCorrectPlaces" : [0 for i in range(n)], "eloCosine" : 0,  "numMatches" : 0}
+
+    for runNum in range(numGames):
+        strengths = generateStrengths(n)
+        trueRanking = getTrueRanking(strengths)
+
+        RR1   = RoundRobin(strengths, 1)
+        RR10  = RoundRobin(strengths, 10)
+        RR100 = RoundRobin(strengths, 100)
+        SE    = SingleElimination(strengths)
+        DE    = DoubleElimination(strengths)
+        SW    = Swiss(strengths)
+        IS    = InsertionSort(strengths)
+        BIS   = BinaryInsertionSort(strengths)
+        BS    = BubbleSort(strengths)
+        SS    = SelectionSort(strengths)
+        QS    = QuickSort(strengths)
+        MS    = MergeSort(strengths)
+        HS    = HeapSort(strengths)
+        IS7   = InsertionSort(strengths, bestOf=7)
+        BIS7  = BinaryInsertionSort(strengths, bestOf=7)
+        BS7   = BubbleSort(strengths, bestOf=7)
+        SS7   = SelectionSort(strengths, bestOf=7)
+        QS7   = QuickSort(strengths, bestOf=7)
+        MS7   = MergeSort(strengths, bestOf=7)
+        HS7   = HeapSort(strengths, bestOf=7)
+
+        tournaments = [RR1, RR10, RR100, SE, DE, SW, IS, BIS, BS, SS, QS, MS, HS, IS7, BIS7, BS7, SS7, QS7, MS7, HS7]
+
+        for i, tournament in enumerate(tournaments):
+            tournament.verbose = False
+            tournament.runAllMatches()
+
+            predictedRanking = tournament.getRanking()
+            eloRanking, _    = tournament.getEloRanking()
+            
+            stats[tournamentNames[i]]["numMatches"] += len(tournament.schedule)
+            stats[tournamentNames[i]]["cosine"]     += getRankingSimilarity(trueRanking, predictedRanking)
+            stats[tournamentNames[i]]["eloCosine"]  += getRankingSimilarity(trueRanking, eloRanking)
+
+            for j, place in enumerate(trueRanking):
+                if predictedRanking[j] == place:
+                    stats[tournamentNames[i]]["correctPlaces"][j] += 1
+                if eloRanking[j] == place:
+                    stats[tournamentNames[i]]["eloCorrectPlaces"][j] += 1
+        
+        print(f"Run {runNum+1}/{numGames } done.")
+
+    print()
+
+    for i, tournament in enumerate(tournaments):
+        stats[tournamentNames[i]]["numMatches"] /= numGames
+        stats[tournamentNames[i]]["cosine"]     /= numGames
+        stats[tournamentNames[i]]["eloCosine"]  /= numGames
+        
+        for j in range(n):
+            stats[tournamentNames[i]]["correctPlaces"][j]    /= numGames
+            stats[tournamentNames[i]]["eloCorrectPlaces"][j] /= numGames
+
+        # print(f"{tournamentNames[i]}\n {stats[tournamentNames[i]]}\n")
+
+    # Make bar charts for all the correct-place-number stats
+    validTournamentNames = ["RR1", "RR10", "RR100", "SE", "DE", "SW", "IS", "IS7", "BIS", "BIS7", "BS", "BS7", "SS", "SS7", "QS", "QS7", "MS", "MS7", "HS", "HS7"]
+    for i in range(n):
+        predRankStats = [stats[t]["correctPlaces"][i] for t in validTournamentNames]
+        eloRankStats  = [stats[t]["eloCorrectPlaces"][i] for t in validTournamentNames]
+        makeDoubledBarChart(validTournamentNames, predRankStats, eloRankStats, "Predicted Ranking", "Elo Ranking", f"Proportion of players correctly ranked #{i+1}", "Tournament", "Proportion", f"img/correctRank{i+1}.png", yRange=[0,1])
+
+    # Make cosine distance graphs
+    predRankCosines = [stats[t]["cosine"] for t in validTournamentNames]
+    eloRankCosines  = [stats[t]["eloCosine"] for t in validTournamentNames]
+    makeDoubledBarChart(validTournamentNames, predRankCosines, eloRankCosines, "Predicted Ranking", "Elo Ranking", f"Average cosine similarity to true ranking", "Tournament", "Similarity", "img/cosine.png", yRange=[0.99*min([min(predRankCosines), min(eloRankCosines)]),1.01])
+
+    # Make numMatches graphs
+    numMatches = [stats[t]["numMatches"] for t in validTournamentNames]
+    makeBarChart(validTournamentNames, [stats[t]["numMatches"] for t in validTournamentNames], "Average number of matches played per tournament", "Tournament", "# Matches", "img/numMatches.png")
+
+    print(numMatches)
+
+    # Make scaled cosine distance graphs
+    predRankCosines = [predRankCosines[i]/numMatches[i] for i in range(len(validTournamentNames))]
+    eloRankCosines  = [eloRankCosines[i]/numMatches[i] for i in range(len(validTournamentNames))]
+    makeDoubledBarChart(validTournamentNames, predRankCosines, eloRankCosines, "Predicted Ranking", "Elo Ranking", f"Average cosine similarity to true ranking divided by mean number of matches in tournament", "Tournament", "Similarity / # Matches", "img/cosineScaled.png")
+
+
+runTournamentTest()
+# prelimTest()
+
