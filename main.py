@@ -818,9 +818,11 @@ def runTournamentTest():
     runTournament(HS, title="Heap Sort", filename="HS.png", id=count)
     count += 1
 
-def makeBarChart(xticks : List[str], yvalues : List, title : str, xlabel : str, ylabel : str, filename : str, yRange=None):
+def makeBarChart(xticks : List[str], yvalues : List, title : str, xlabel : str, ylabel : str, filename : str, yRange=None, yError=None):
     fig, ax = plt.subplots()
     rects1 = ax.bar(xticks, yvalues)
+    if yError is not None:
+        ax.errorbar(xticks, yvalues, yerr = yError,fmt='o',ecolor = 'red',color='yellow')
     ax.set_title(title)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
@@ -845,12 +847,15 @@ def makeBarChart(xticks : List[str], yvalues : List, title : str, xlabel : str, 
 
     plt.savefig(filename)
 
-def makeDoubledBarChart(xticks : List[str], yvalues1 : List, yvalues2 : List, ylabel1 : str, ylabel2 : str, title : str, xlabel : str, ylabel : str, filename : str, yRange=None):
+def makeDoubledBarChart(xticks : List[str], yvalues1 : List, yvalues2 : List, ylabel1 : str, ylabel2 : str, title : str, xlabel : str, ylabel : str, filename : str, yRange=None, yErrors=None):
     fig, ax = plt.subplots()
     x = np.arange(len(xticks))
     width=0.35
     rects1 = ax.bar(x-width/2, yvalues1, width, label=ylabel1)
     rects2 = ax.bar(x+width/2, yvalues2, width, label=ylabel2)
+    if yErrors is not None:
+        ax.errorbar(x-width/2, yvalues1, yerr = yErrors[0],fmt='o',ecolor = 'red',color='yellow')
+        ax.errorbar(x+width/2, yvalues2, yerr = yErrors[1],fmt='o',ecolor = 'red',color='yellow')
     
     ax.set_title(title)
     ax.set_xlabel(xlabel)
@@ -887,12 +892,12 @@ def makeDoubledBarChart(xticks : List[str], yvalues1 : List, yvalues2 : List, yl
 
 def prelimTest():
     n = 16
-    numGames = 10000
+    numGames = 100
 
     tournamentNames = ["RR1", "RR10", "RR100", "SE", "DE", "SW", "IS", "BIS", "BS", "SS", "QS", "MS", "HS", "IS7", "BIS7", "BS7", "SS7", "QS7", "MS7", "HS7"]
     stats = {}
     for t in tournamentNames:
-        stats[t] = {"correctPlaces" : [0 for i in range(n)], "cosine" : 0, "eloCorrectPlaces" : [0 for i in range(n)], "eloCosine" : 0,  "numMatches" : 0}
+        stats[t] = {"correctPlaces" : [0 for i in range(n)], "cosine" : 0, "cosineSq" : 0, "eloCorrectPlaces" : [0 for i in range(n)], "eloCosine" : 0, "eloCosineSq" : 0,  "numMatches" : 0}
 
     for runNum in range(numGames):
         strengths = generateStrengths(n)
@@ -928,9 +933,11 @@ def prelimTest():
             predictedRanking = tournament.getRanking()
             eloRanking, _    = tournament.getEloRanking()
             
-            stats[tournamentNames[i]]["numMatches"] += len(tournament.schedule)
-            stats[tournamentNames[i]]["cosine"]     += getRankingSimilarity(trueRanking, predictedRanking)
-            stats[tournamentNames[i]]["eloCosine"]  += getRankingSimilarity(trueRanking, eloRanking)
+            stats[tournamentNames[i]]["numMatches"]  += len(tournament.schedule)
+            stats[tournamentNames[i]]["cosine"]      += getRankingSimilarity(trueRanking, predictedRanking)
+            stats[tournamentNames[i]]["eloCosine"]   += getRankingSimilarity(trueRanking, eloRanking)
+            stats[tournamentNames[i]]["cosineSq"]    += getRankingSimilarity(trueRanking, predictedRanking)**2
+            stats[tournamentNames[i]]["eloCosineSq"] += getRankingSimilarity(trueRanking, eloRanking)**2
 
             for j, place in enumerate(trueRanking):
                 if predictedRanking[j] == place:
@@ -946,6 +953,8 @@ def prelimTest():
         stats[tournamentNames[i]]["numMatches"] /= numGames
         stats[tournamentNames[i]]["cosine"]     /= numGames
         stats[tournamentNames[i]]["eloCosine"]  /= numGames
+        stats[tournamentNames[i]]["cosineSq"]     /= numGames
+        stats[tournamentNames[i]]["eloCosineSq"]  /= numGames
         
         for j in range(n):
             stats[tournamentNames[i]]["correctPlaces"][j]    /= numGames
@@ -953,8 +962,18 @@ def prelimTest():
 
         # print(f"{tournamentNames[i]}\n {stats[tournamentNames[i]]}\n")
 
-    # Make bar charts for all the correct-place-number stats
+    
     validTournamentNames = ["RR1", "RR10", "RR100", "SE", "DE", "SW", "IS", "IS7", "BIS", "BIS7", "BS", "BS7", "SS", "SS7", "QS", "QS7", "MS", "MS7", "HS", "HS7"]
+
+    cosineStds    = [math.sqrt(stats[t]["cosineSq"]-stats[t]["cosine"]**2) for t in validTournamentNames]
+    eloCosineStds = [math.sqrt(stats[t]["eloCosineSq"]-stats[t]["eloCosine"]**2) for t in validTournamentNames]
+
+    cosineStdsScaled    = [math.sqrt(stats[t]["cosineSq"]/stats[t]["numMatches"]-(stats[t]["cosine"]/stats[t]["numMatches"])**2) for t in validTournamentNames]
+    eloCosineStdsScaled = [math.sqrt(stats[t]["eloCosineSq"]/stats[t]["numMatches"]-(stats[t]["eloCosine"]/stats[t]["numMatches"])**2) for t in validTournamentNames]
+
+    # print(cosineStds, eloCosineStds)
+
+    # Make bar charts for all the correct-place-number stats
     for i in range(n):
         predRankStats = [stats[t]["correctPlaces"][i] for t in validTournamentNames]
         eloRankStats  = [stats[t]["eloCorrectPlaces"][i] for t in validTournamentNames]
@@ -964,19 +983,24 @@ def prelimTest():
     predRankCosines = [stats[t]["cosine"] for t in validTournamentNames]
     eloRankCosines  = [stats[t]["eloCosine"] for t in validTournamentNames]
     makeDoubledBarChart(validTournamentNames, predRankCosines, eloRankCosines, "Predicted Ranking", "Elo Ranking", f"Average cosine similarity to true ranking", "Tournament", "Similarity", "img/cosine.png", yRange=[0.99*min([min(predRankCosines), min(eloRankCosines)]),1.01])
+    makeDoubledBarChart(validTournamentNames, predRankCosines, eloRankCosines, "Predicted Ranking", "Elo Ranking", f"Average cosine similarity to true ranking", "Tournament", "Similarity", "img/cosineWithStdBars.png", yRange=[0.99*min([min(predRankCosines), min(eloRankCosines)]),1.01], yErrors=[cosineStds, eloCosineStds])
+    makeDoubledBarChart(validTournamentNames, cosineStds, eloCosineStds, "Predicted Ranking", "Elo Ranking", f"Standard deviation of similarity to true ranking", "Tournament", "Similarity", "img/cosineStd.png")
+
 
     # Make numMatches graphs
     numMatches = [stats[t]["numMatches"] for t in validTournamentNames]
     makeBarChart(validTournamentNames, [stats[t]["numMatches"] for t in validTournamentNames], "Average number of matches played per tournament", "Tournament", "# Matches", "img/numMatches.png")
 
-    print(numMatches)
+    # print(numMatches)
 
     # Make scaled cosine distance graphs
     predRankCosines = [predRankCosines[i]/numMatches[i] for i in range(len(validTournamentNames))]
     eloRankCosines  = [eloRankCosines[i]/numMatches[i] for i in range(len(validTournamentNames))]
     makeDoubledBarChart(validTournamentNames, predRankCosines, eloRankCosines, "Predicted Ranking", "Elo Ranking", f"Average cosine similarity to true ranking divided by mean number of matches in tournament", "Tournament", "Similarity / # Matches", "img/cosineScaled.png")
+    makeDoubledBarChart(validTournamentNames, predRankCosines, eloRankCosines, "Predicted Ranking", "Elo Ranking", f"Average cosine similarity to true ranking divided by mean number of matches in tournament", "Tournament", "Similarity / # Matches", "img/cosineScaledWithStdBars.png", yErrors=[cosineStdsScaled, eloCosineStdsScaled])
+    makeDoubledBarChart(validTournamentNames, cosineStdsScaled, eloCosineStdsScaled, "Predicted Ranking", "Elo Ranking", f"Standard deviation of average cosine similarity to true ranking divided by mean number of matches in tournament", "Tournament", "Similarity / # Matches", "img/cosineScaledStd.png")
 
 
-runTournamentTest()
-# prelimTest()
+# runTournamentTest()
+prelimTest()
 
