@@ -6,9 +6,10 @@ from Tournament import Tournament
 from ClassicTournaments import *
 from SortingTournaments import *
 import matplotlib.pyplot as plt
+import pandas as pd
+from tabulate import tabulate
 
-
-def runTournament(tournament : Tournament, graphStep=1, title="", filename="", id=0):
+def runTournament(tournament : Tournament, graphStep=1, title="", filename="", id=0, verbose=True):
     # totalWinsHistory = []
     # eloScoresHistory = []
 
@@ -17,7 +18,6 @@ def runTournament(tournament : Tournament, graphStep=1, title="", filename="", i
     #     eloScoresHistory.append(tournament.eloScores.copy())
 
     #     tournament.runNextMatch()
-
     tournament.runAllMatches()
 
     # TODO: Clean up this monstrosity (USE PANDAS DATAFRAMES)
@@ -29,16 +29,33 @@ def runTournament(tournament : Tournament, graphStep=1, title="", filename="", i
     eloPlayers, eloNumbers   = tournament.getEloRanking()
     awrPlayers, awrNumbers   = tournament.getAverageWinRateRanking()
     awrlPlayers, awrlNumbers = tournament.getAverageWinRateLaplaceRanking()
+    wrPlayers, wrNumbers     = getDominationDegreeRanking(tournament.winRates)
+    wrlPlayers, wrlNumbers     = getDominationDegreeRanking(tournament.winRatesLaplace)
 
-    trueRanking = getTrueRanking(tournament.strengths)
+    for arr in (strNumbers, eloNumbers, awrNumbers, awrlNumbers):
+        for i in range(len(arr)):
+            if arr[i] is not None:
+                arr[i] = f"{arr[i]:.3f}"
+
+    trueRanking, _ = getTrueRanking(tournament.strengths)
+    # domRanking, _ = getDominationDegreeRanking(tournament.strengths)
+    # print(trueRanking)
+    # print(domRanking)
     predictedRanking = tournament.getRanking()
 
-    print("Rank |  True   Predicted   Player (Str)   Player (Wins)   Player (Elos)   Player (AWR)   Player (AWRL)")
-    print("------------------------------------------------------------------------------------------------------")
-    for i in range(tournament.numPlayers):
-        print(f" {i+1:2}  |   {trueRanking[i]:2}       {predictedRanking[i]:2}       {strPlayers[i]:2} ({strNumbers[i]:.2f})      {winPlayers[i]:2} ({winNumbers[i]:4})       {eloPlayers[i]:2} ({eloNumbers[i]:7.2f})    {awrPlayers[i]:2} ({awrNumbers[i]:.2f})      {awrlPlayers[i]:2} ({awrlNumbers[i]:.2f})")
+    # print("Rank |  True   Predicted   Player (Str)   Player (Wins)   Player (Elos)   Player (AWR)   Player (AWRL)")
+    # print("------------------------------------------------------------------------------------------------------")
+    # for i in range(tournament.numPlayers):
+    #     print(f" {i+1:2}  |   {trueRanking[i]:2}       {predictedRanking[i]:2}       {strPlayers[i]:2} ({strNumbers[i]:.2f})      {winPlayers[i]:2} ({winNumbers[i]:4})       {eloPlayers[i]:2} ({eloNumbers[i]:7.2f})    {awrPlayers[i]:2} ({awrNumbers[i]:.2f})      {awrlPlayers[i]:2} ({awrlNumbers[i]:.2f})")
         
-    print(f"Cosine similarities to true ranking:\nPred: {getRankingSimilarity(trueRanking, predictedRanking)}\nStrs: {getRankingSimilarity(trueRanking, strPlayers)}\nWins: {getRankingSimilarity(trueRanking, winPlayers)}\nElos: {getRankingSimilarity(trueRanking, eloPlayers)}")
+    # print(f"Cosine similarities to true ranking:\nPred: {getRankingSimilarity(trueRanking, predictedRanking)}\nStrs: {getRankingSimilarity(trueRanking, strPlayers)}\nWins: {getRankingSimilarity(trueRanking, winPlayers)}\nElos: {getRankingSimilarity(trueRanking, eloPlayers)}")
+
+    df = pd.DataFrame({"Pos.": ["1st", "2nd", "3rd"]+[f"{i}th" for i in range(4, len(trueRanking)+1)], "True" : trueRanking, "Pred" : predictedRanking, "Wins" : zip(winPlayers, winNumbers), "Elo" : zip(eloPlayers, eloNumbers), "Avg Str" : zip(strPlayers, strNumbers), "Avg WR" : zip(awrPlayers, awrNumbers), "Avg WRL" : zip(awrlPlayers, awrlNumbers), "WR Dom" : zip(wrPlayers, wrNumbers), "WRL Dom" : zip(wrlPlayers, wrlNumbers)})
+    df.set_index("Pos.", inplace=True)
+    # print(df.to_string())
+    # df.drop(labels=["Avg WR", "Avg WRL"], axis=1, inplace=True)
+    print(title)
+    print(tabulate(df, headers="keys", tablefmt="github"))
 
     totalWinsHistory = totalWinsHistory[::graphStep]
     eloScoresHistory = eloScoresHistory[::graphStep]
@@ -202,7 +219,7 @@ def prelimTest():
     tournamentNames = ["RR1", "RR10", "RR100", "SE", "DE", "SW", "IS", "BIS", "BS", "SS", "QS", "MS", "HS", "IS7", "BIS7", "BS7", "SS7", "QS7", "MS7", "HS7"]
     stats = {}
     for t in tournamentNames:
-        stats[t] = {"correctPlaces" : [0 for i in range(n)], "cosine" : 0, "cosineSq" : 0, "eloCorrectPlaces" : [0 for i in range(n)], "eloCosine" : 0, "eloCosineSq" : 0,  "numMatches" : 0}
+        stats[t] = {"correctPlaces" : np.zeros(n), "cosine" : 0, "cosineSq" : 0, "eloCorrectPlaces" : np.zeros(n), "eloCosine" : 0, "eloCosineSq" : 0,  "numMatches" : 0}
 
     for runNum in range(numGames):
         strengths = generateStrengths(n)
@@ -239,16 +256,22 @@ def prelimTest():
             eloRanking, _    = tournament.getEloRanking()
             
             stats[tournamentNames[i]]["numMatches"]  += len(tournament.schedule)
-            stats[tournamentNames[i]]["cosine"]      += getRankingSimilarity(trueRanking, predictedRanking)
-            stats[tournamentNames[i]]["eloCosine"]   += getRankingSimilarity(trueRanking, eloRanking)
-            stats[tournamentNames[i]]["cosineSq"]    += getRankingSimilarity(trueRanking, predictedRanking)**2
-            stats[tournamentNames[i]]["eloCosineSq"] += getRankingSimilarity(trueRanking, eloRanking)**2
+            cosineSim = getRankingSimilarity(trueRanking, predictedRanking, numSamples=30)[0]
+            eloCosineSim = getRankingSimilarity(trueRanking, eloRanking, numSamples=30)[0]
+            stats[tournamentNames[i]]["cosine"]      += cosineSim
+            stats[tournamentNames[i]]["eloCosine"]   += eloCosineSim
+            stats[tournamentNames[i]]["cosineSq"]    += cosineSim**2
+            stats[tournamentNames[i]]["eloCosineSq"] += eloCosineSim**2
+            stats[tournamentNames[i]]["correctPlaces"]    += proportionCorrectPositionsVector(trueRanking, predictedRanking)
+            stats[tournamentNames[i]]["eloCorrectPlaces"] += proportionCorrectPositionsVector(trueRanking, eloRanking)
+            # if i==2:
+            #     print(stats[tournamentNames[i]]["correctPlaces"], stats[tournamentNames[i]]["eloCorrectPlaces"])
 
-            for j, place in enumerate(trueRanking):
-                if predictedRanking[j] == place:
-                    stats[tournamentNames[i]]["correctPlaces"][j] += 1
-                if eloRanking[j] == place:
-                    stats[tournamentNames[i]]["eloCorrectPlaces"][j] += 1
+            # for j, place in enumerate(trueRanking):
+            #     if predictedRanking[j] == place:
+            #         stats[tournamentNames[i]]["correctPlaces"][j] += 1
+            #     if eloRanking[j] == place:
+            #         stats[tournamentNames[i]]["eloCorrectPlaces"][j] += 1
         
         print(f"Run {runNum+1}/{numGames } done.")
 
@@ -260,10 +283,12 @@ def prelimTest():
         stats[tournamentNames[i]]["eloCosine"]  /= numGames
         stats[tournamentNames[i]]["cosineSq"]     /= numGames
         stats[tournamentNames[i]]["eloCosineSq"]  /= numGames
+        stats[tournamentNames[i]]["correctPlaces"]    /= numGames
+        stats[tournamentNames[i]]["eloCorrectPlaces"] /= numGames
         
-        for j in range(n):
-            stats[tournamentNames[i]]["correctPlaces"][j]    /= numGames
-            stats[tournamentNames[i]]["eloCorrectPlaces"][j] /= numGames
+        # for j in range(n):
+        #     stats[tournamentNames[i]]["correctPlaces"][j]    /= numGames
+        #     stats[tournamentNames[i]]["eloCorrectPlaces"][j] /= numGames
 
         # print(f"{tournamentNames[i]}\n {stats[tournamentNames[i]]}\n")
 
@@ -305,6 +330,13 @@ def prelimTest():
     makeDoubledBarChart(validTournamentNames, predRankCosines, eloRankCosines, "Predicted Ranking", "Elo Ranking", f"Average cosine similarity to true ranking divided by mean number of matches in tournament", "Tournament", "Similarity / # Matches", "img/cosineScaledWithStdBars.png", yErrors=[cosineStdsScaled, eloCosineStdsScaled])
     makeDoubledBarChart(validTournamentNames, cosineStdsScaled, eloCosineStdsScaled, "Predicted Ranking", "Elo Ranking", f"Standard deviation of average cosine similarity to true ranking divided by mean number of matches in tournament", "Tournament", "Similarity / # Matches", "img/cosineScaledStd.png")
 
-runTournamentTest()
+# runTournamentTest()
 prelimTest()
 
+# for _ in range(1):
+#     strengths = generateStrengths(4)
+#     print(strengths)
+#     # SE = SingleElimination(strengths, verbose=False)
+#     # runTournament(SE)
+#     RR = RoundRobin(strengths, 50, verbose=False)
+#     runTournament(RR)

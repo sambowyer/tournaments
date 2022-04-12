@@ -1,9 +1,10 @@
 import numpy as np
 from typing import List
 import random
+from utils import combineJointPositionsInRanking
 
 class Tournament:
-    def __init__(self, strengths : np.ndarray, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1):
+    def __init__(self, strengths : np.ndarray, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1, verbose=True):
         self.strengths = strengths 
         self.eloFunc   = eloFunc
         self.bestOf    = bestOf
@@ -20,7 +21,7 @@ class Tournament:
         self.winRates         = np.zeros([self.numPlayers, self.numPlayers])
         self.winRatesLaplace  = np.array([[0 if x==y else 0.5 for x in range(self.numPlayers)] for y in range(self.numPlayers)])
 
-        self.verbose = True
+        self.verbose = verbose
 
     def getNextMatch(self) -> List[int]:
         '''Should return a size-2 list containing the two competitors (i.e. 2 ints) playing the next match. If no more matches in schedule, then return None.
@@ -99,26 +100,26 @@ class Tournament:
         return history
     
     def getRanking(self) -> List[int]:
-        '''Returns a ranked list of the players according to the specifics of the tournament system.
-        MUST HAVE self.isFinished==True.'''
+        '''Returns a ranked list of the players according to the specifics of the tournament system.'''
         pass 
 
-    def getTotalWinRanking(self) -> (List[int], List[int]):
+    def getTotalWinRanking(self) -> (List[List[int]], List[int]):
         '''Returns a ranked list of the players according to the total number of wins as well as a list with the corresponding number of wins for each player.'''
         ranking = range(self.numPlayers)
         totalWins = self.getTotalWins()
         ranking = sorted(ranking, key = lambda x: totalWins[x], reverse=True)
+        totalWins = sorted(totalWins, reverse=True)
 
-        return ranking, sorted(totalWins, reverse=True)
+        return combineJointPositionsInRanking(ranking, totalWins)
 
-    def getEloRanking(self) -> (List[int], List[float]):
+    def getEloRanking(self) -> (List[List[int]], List[float]):
         '''Returns a ranked list of the players according to their Elo scores as well as a list with the corresponding Elo scores for each player.'''
         ranking = range(self.numPlayers)
         ranking = sorted(ranking, key = lambda x: self.eloScores[x], reverse=True)
 
-        return ranking, sorted(self.eloScores, reverse=True)
+        return combineJointPositionsInRanking(ranking, sorted(self.eloScores, reverse=True))
 
-    def getAverageWinRateRanking(self) -> (List[int], List[float]):
+    def getAverageWinRateRanking(self) -> (List[List[int]], List[float]):
         '''Returns a ranked list of the players according to their average win-rates as well as a list with the corresponding win-rates for each player.'''
         ranking = range(self.numPlayers)
         # numGames = [0 for i in range(self.numPlayers)]
@@ -130,9 +131,9 @@ class Tournament:
 
         ranking = sorted(ranking, key = lambda x: averageWinRate[x], reverse=True)
 
-        return ranking, sorted(averageWinRate, reverse=True)
+        return combineJointPositionsInRanking(ranking, sorted(averageWinRate, reverse=True))
 
-    def getAverageWinRateLaplaceRanking(self) -> (List[int], List[float]):
+    def getAverageWinRateLaplaceRanking(self) -> (List[List[int]], List[float]):
         '''Returns a ranked list of the players according to their average win-rates (with Laplace's rule of succession) as well as a list with the corresponding win-rates-with-succession for each player.'''
         ranking = range(self.numPlayers)
         # numGames = [0 for i in range(self.numPlayers)]
@@ -144,4 +145,4 @@ class Tournament:
 
         ranking = sorted(ranking, key = lambda x: averageWinRate[x], reverse=True)
 
-        return ranking, sorted(averageWinRate, reverse=True)
+        return combineJointPositionsInRanking(ranking, sorted(averageWinRate, reverse=True))

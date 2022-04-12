@@ -7,8 +7,8 @@ from utils import *
 
 
 class SortingAlgorithm(Tournament):
-    def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1):
-        super().__init__(strengths, eloFunc, bestOf)
+    def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1, verbose=True):
+        super().__init__(strengths, eloFunc, bestOf, verbose)
 
         self.ranking = list(range(self.numPlayers))
         random.shuffle(self.ranking)  # probably not necessary to shuffle them but will do it just in case since strength generation of each player isn't entirely independent
@@ -19,7 +19,7 @@ class SortingAlgorithm(Tournament):
         self.ranking[index2] = temp
 
     def getRanking(self) -> List[int]:
-        return self.ranking
+        return [[x] for x in self.ranking]
 
 class InsertionSort(SortingAlgorithm):
     def runAllMatches(self):

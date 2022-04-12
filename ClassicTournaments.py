@@ -7,8 +7,8 @@ from Tournament import Tournament
 from utils import *
 
 class RoundRobin(Tournament):
-    def __init__(self, strengths, numFolds, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1):
-        super().__init__(strengths, eloFunc, bestOf)
+    def __init__(self, strengths, numFolds, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1, verbose=True):
+        super().__init__(strengths, eloFunc, bestOf, verbose)
         self.numFolds = numFolds
         
         self.matchesToBePlayed = self.generateAllMatches()
@@ -28,16 +28,13 @@ class RoundRobin(Tournament):
         random.shuffle(matches)
         return deque(matches)
 
-    def getRanking(self) -> (List[int], List[int]):
-        if self.isFinished:
-            return self.getTotalWinRanking()[0]
-        else:
-            print("Not finished yet.")  #TODO: change this
+    def getRanking(self) -> List[int]:
+        return self.getTotalWinRanking()[0]
 
 class SingleEliminationRound(Tournament):
     '''This will be able to run a SINGLE round from a single-elimination tournament'''
-    def __init__(self, strengths, players, eloFunc=lambda x: 1/(1+10**(x/400))):
-        super().__init__(strengths, eloFunc)
+    def __init__(self, strengths, players, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1, verbose=True):
+        super().__init__(strengths, eloFunc, bestOf, verbose)
         # IMPORTANT: numPlayers must be a power of two
         self.players = players
         self.matches = self.generateMatches(players)
@@ -74,8 +71,8 @@ class SingleEliminationRound(Tournament):
         return losers
 
 class SingleElimination(Tournament):
-    def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1):
-        super().__init__(strengths, eloFunc, bestOf)
+    def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1, verbose=True):
+        super().__init__(strengths, eloFunc, bestOf, verbose)
         self.currentRound = SingleEliminationRound(strengths, list(range(self.numPlayers)), eloFunc)
 
     def getNextMatch(self) -> List[int]:
@@ -94,15 +91,12 @@ class SingleElimination(Tournament):
 
         return nextMatch
 
-    def getRanking(self) -> (List[int], List[int]):
-        if self.isFinished:
-            return self.getTotalWinRanking()[0]
-        else:
-            print("Not finished yet.")  #TODO: change this
+    def getRanking(self) -> List[int]:
+        return self.getTotalWinRanking()[0]
 
 class DoubleElimination(Tournament):
-    def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1):
-        super().__init__(strengths, eloFunc, bestOf)
+    def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1, verbose=True):
+        super().__init__(strengths, eloFunc, bestOf, verbose)
         self.currentWinnerRound = SingleEliminationRound(strengths, list(range(self.numPlayers)), eloFunc)
         self.currentLoserRound  = None
 
@@ -209,15 +203,12 @@ class DoubleElimination(Tournament):
         else:
             return None
 
-    def getRanking(self) -> (List[int], List[int]):
-        if self.isFinished:
-            return self.getTotalWinRanking()[0]
-        else:
-            print("Not finished yet.")  #TODO: change this
+    def getRanking(self) -> List[int]:
+        return self.getTotalWinRanking()[0]
 
 class Swiss(Tournament):
-    def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1):
-        super().__init__(strengths, eloFunc, bestOf)
+    def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1, verbose=True):
+        super().__init__(strengths, eloFunc, bestOf, verbose)
 
         self.ranking = list(range(self.numPlayers)) 
         random.shuffle(self.ranking)  # probably not necessary to shuffle them but will do it just in case since strength generation of each player isn't entirely independent
@@ -249,5 +240,5 @@ class Swiss(Tournament):
 
             # print(self.ranking)
 
-    def getRanking(self) -> (List[int], List[int]):
-        return self.ranking
+    def getRanking(self) -> List[List[int]]:
+        return [[x] for x in self.ranking]
