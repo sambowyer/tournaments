@@ -71,9 +71,15 @@ class SingleEliminationRound(Tournament):
         return losers
 
 class SingleElimination(Tournament):
-    def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1, verbose=True):
+    def __init__(self, strengths, thirdPlacePlayoff=False, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1, verbose=True):
         super().__init__(strengths, eloFunc, bestOf, verbose)
         self.currentRound = SingleEliminationRound(strengths, list(range(self.numPlayers)), eloFunc)
+
+        self.thirdPlacePlayoff = thirdPlacePlayoff
+
+        self.ranking = []
+        self.runnerUp = None
+        self.thirdPlacePlayoffDone = False
 
     def getNextMatch(self) -> List[int]:
         nextMatch = self.currentRound.getNextMatch()
@@ -81,7 +87,20 @@ class SingleElimination(Tournament):
             winners = self.currentRound.getWinners(self.resultsList[-self.currentRound.matchNo:])
             
             if len(winners) == 1:  # Tournament has finished
-                return None
+                if len(self.ranking) == 0:  # 3rd place playoff hasn't happened yet
+                    self.ranking = self.getTotalWinRanking()[0]
+                    self.runnerUp = self.ranking[1][0]
+                    if self.thirdPlacePlayoff:
+                        self.thirdPlacePlayoffDone = True
+                        return self.ranking[2]
+                    else:
+                        return None
+                else:  # 3rd place playoff has happened, but we need to update self.ranking
+                    self.ranking = self.getTotalWinRanking()[0]
+                    self.ranking[2] = self.ranking[1].copy()
+                    self.ranking[2].remove(self.runnerUp)
+                    self.ranking[1] = [self.runnerUp]
+                    return None
                 
             nextRoundStrengths = getStrengthsSubmatrix(self.strengths, winners)
 
@@ -92,7 +111,10 @@ class SingleElimination(Tournament):
         return nextMatch
 
     def getRanking(self) -> List[int]:
-        return self.getTotalWinRanking()[0]
+        if self.isFinished:
+            return self.ranking
+        else:
+            return self.getTotalWinRanking()[0]
 
 class DoubleElimination(Tournament):
     def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1, verbose=True):
@@ -115,6 +137,9 @@ class DoubleElimination(Tournament):
         self.wc = 0
         self.lc = 0
 
+        self.winnerRoundCount  = 0
+        self.firstLossRoundNos = {}
+
     def getNextMatch(self) -> List[int]:
         if self.currentTree == "winner":
             nextMatch = self.currentWinnerRound.getNextMatch()
@@ -122,6 +147,9 @@ class DoubleElimination(Tournament):
                 winners = self.currentWinnerRound.getWinners(self.resultsList[-self.currentWinnerRound.matchNo:])
 
                 self.newLosers = self.currentWinnerRound.getLosers(self.resultsList[-self.currentWinnerRound.matchNo:])
+
+                self.winnerRoundCount += 1
+                self.firstLossRoundNos.update({x: self.winnerRoundCount for x in self.newLosers})
 
                 if len(winners) == 1:  # Tournament has finished
                     self.winnerTreeWinner = winners[0]
@@ -197,6 +225,8 @@ class DoubleElimination(Tournament):
             if self.resultsList[-1] == 0:  # so winnerTreeWinner beat loserTreeWinner (i.e. we're done)
                 return None
             else:
+                self.winnerRoundCount += 1
+                self.firstLossRoundNos.update({self.winnerTreeWinner : self.winnerRoundCount})
                 self.currentTree = None
                 return [self.winnerTreeWinner, self.loserTreeWinner]
     
@@ -204,7 +234,17 @@ class DoubleElimination(Tournament):
             return None
 
     def getRanking(self) -> List[int]:
-        return self.getTotalWinRanking()[0]
+        ranking = range(self.numPlayers)
+        totalWins = self.getTotalWins()
+        for x in self.firstLossRoundNos:
+            totalWins[x] -= 1/(self.firstLossRoundNos[x])
+        totalWins[self.winnerTreeWinner] += 1  # to account for the extra game that self.loserTreeWinner may have won
+        ranking = sorted(ranking, key = lambda x: totalWins[x], reverse=True)
+        totalWins = sorted(totalWins, reverse=True)
+        print(ranking, totalWins)
+
+        return combineJointPositionsInRanking(ranking, totalWins)[0]
+
 
 class Swiss(Tournament):
     def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1, verbose=True):
