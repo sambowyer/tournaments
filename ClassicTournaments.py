@@ -28,7 +28,7 @@ class RoundRobin(Tournament):
         random.shuffle(matches)
         return deque(matches)
 
-    def getRanking(self) -> List[int]:
+    def getRanking(self) -> List[List[int]]:
         return self.getTotalWinRanking()[0]
 
 class SingleEliminationRound(Tournament):
@@ -110,7 +110,7 @@ class SingleElimination(Tournament):
 
         return nextMatch
 
-    def getRanking(self) -> List[int]:
+    def getRanking(self) -> List[List[int]]:
         if self.isFinished:
             return self.ranking
         else:
@@ -233,7 +233,7 @@ class DoubleElimination(Tournament):
         else:
             return None
 
-    def getRanking(self) -> List[int]:
+    def getRanking(self) -> List[List[int]]:
         ranking = range(self.numPlayers)
         totalWins = self.getTotalWins()
         for x in self.firstLossRoundNos:

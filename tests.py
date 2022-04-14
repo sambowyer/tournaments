@@ -5,6 +5,7 @@ from utils import *
 from Tournament import Tournament 
 from ClassicTournaments import *
 from SortingTournaments import *
+from MABTournaments import *
 import matplotlib.pyplot as plt
 import pandas as pd
 from tabulate import tabulate
@@ -342,17 +343,27 @@ def prelimTest():
 # runTournamentTest()
 # prelimTest()
 
-for _ in range(10):
-    strengths = generateStrengths(8)
+for _ in range(1):
+    strengths = generateStrengths(6)
     # print(strengths)
     # SE = SingleElimination(strengths, verbose=True)
     # runTournament(SE)
     # SE = SingleElimination(strengths, thirdPlacePlayoff=True, verbose=True)
     # runTournament(SE)
-    DE = DoubleElimination(strengths, verbose=True)
-    runTournament(DE)
+    # DE = DoubleElimination(strengths, verbose=True)
+    # runTournament(DE)
     # SE = SingleElimination(strengths, thirdPlacePlayoff=True, verbose=True)
     # runTournament(SE)
+    U = UCB(strengths)
+    runTournament(U)
+    TS = TS(strengths)
+    runTournament(TS)
+    EG = EG(strengths)
+    runTournament(EG)
+    print(strengths)
+    print(U.winRatesLaplace)
+    print(TS.winRatesLaplace)
+    print(EG.winRatesLaplace)
 
 #     RR = RoundRobin(strengths, 50, verbose=False)
 #     runTournament(RR)
