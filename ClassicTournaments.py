@@ -31,6 +31,12 @@ class RoundRobin(Tournament):
     def getRanking(self) -> List[List[int]]:
         return self.getTotalWinRanking()[0]
 
+    def getNumRounds(self) -> int:
+        return self.numFolds*(self.numPlayers-1)
+
+    def toString(self) -> str:
+        return f"RR{self.numFolds}"
+
 class SingleEliminationRound(Tournament):
     '''This will be able to run a SINGLE round from a single-elimination tournament'''
     def __init__(self, strengths, players, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1, verbose=True):
@@ -115,6 +121,12 @@ class SingleElimination(Tournament):
             return self.ranking
         else:
             return self.getTotalWinRanking()[0]
+
+    def getNumRounds(self) -> int:
+        return int(math.log2(self.numPlayers))
+
+    def toString(self) -> str:
+        return "SE"
 
 class DoubleElimination(Tournament):
     def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1, verbose=True):
@@ -245,6 +257,15 @@ class DoubleElimination(Tournament):
 
         return combineJointPositionsInRanking(ranking, totalWins)[0]
 
+    def getNumRounds(self) -> int:
+        if self.winnerTreeWinner in self.firstLossRoundNos:
+            return 3*int(math.log2(self.numPlayers))
+        else:
+            return 3*int(math.log2(self.numPlayers)) - 1
+
+    def toString(self) -> str:
+        return "DE"
+
 
 class Swiss(Tournament):
     def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1, verbose=True):
@@ -282,3 +303,9 @@ class Swiss(Tournament):
 
     def getRanking(self) -> List[List[int]]:
         return [[x] for x in self.ranking]
+
+    def getNumRounds(self) -> int:
+        return int(math.log2(self.numPlayers))
+
+    def toString(self) -> str:
+        return "SW"

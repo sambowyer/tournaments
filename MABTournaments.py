@@ -68,6 +68,9 @@ class MAB(Tournament):
     def getRanking(self) -> List[List[int]]:
         return getDominationDegreeRanking(self.winRatesLaplace)[0]
 
+    def getNumRounds(self) -> int:
+        return len(self.schedule) - self.explorationFolds*(0.5*self.numPlayers*(self.numPlayers-1)) + self.explorationFolds
+
 class UCB(MAB):
     def getBoundSizes(self) -> Dict[tuple, float]:
         boundSizes = {}
@@ -107,6 +110,9 @@ class UCB(MAB):
         
         return random.choice(potentialArms)
 
+    def toString(self) -> str:
+        return "UCB"
+
 
 class TS(MAB):
     def chooseArm(self) -> List[int]:
@@ -119,6 +125,9 @@ class TS(MAB):
                 maxStrengthExpectation = strengthExpectation
                 nextMatch = match 
         return nextMatch
+
+    def toString(self) -> str:
+        return "TS"
 
 class EG(MAB):
     def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1, verbose=True, explorationFolds=3, patience=3, epsilon=0.25):
@@ -141,6 +150,6 @@ class EG(MAB):
             
             return random.choice(potentialNextMatches)
 
-
-        
+    def toString(self) -> str:
+        return f"EG{self.epsilon}"
 

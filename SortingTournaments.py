@@ -21,6 +21,9 @@ class SortingAlgorithm(Tournament):
     def getRanking(self) -> List[int]:
         return [[x] for x in self.ranking]
 
+    def getNumRounds(self) -> int:
+        return len(self.schedule)
+
 class InsertionSort(SortingAlgorithm):
     def runAllMatches(self):
         '''Will run through the whole tournament (i.e. algorithm) running each comparison as a match with self.getMatchResult() and self.updateStats()'''
@@ -37,6 +40,9 @@ class InsertionSort(SortingAlgorithm):
             if not inserted:
                 newRanking.append(x)
         self.ranking = newRanking
+
+    def toString(self) -> str:
+        return "IS"
 
 class BinaryInsertionSort(SortingAlgorithm):
     def runAllMatches(self):
@@ -62,6 +68,9 @@ class BinaryInsertionSort(SortingAlgorithm):
         self.ranking = newRanking
         # print(self.ranking)
 
+    def toString(self) -> str:
+        return "BIS"
+
 class BubbleSort(SortingAlgorithm):
     def runAllMatches(self):
         '''Will run through the whole tournament (i.e. algorithm) running each comparison as a match with self.getMatchResult() and self.updateStats()'''
@@ -83,6 +92,9 @@ class BubbleSort(SortingAlgorithm):
                     # self.ranking[i]   = temp
                     m = i
             n = m
+
+    def toString(self) -> str:
+        return "BS"
 
 class SelectionSort(SortingAlgorithm):
     def runAllMatches(self):
@@ -106,6 +118,9 @@ class SelectionSort(SortingAlgorithm):
             # self.ranking[k] = self.ranking[i]
             # self.ranking[i] = temp
         # print(self.ranking)
+    
+    def toString(self) -> str:
+        return "SS"
 
 class QuickSort(SortingAlgorithm):
     def runAllMatches(self):
@@ -141,6 +156,12 @@ class QuickSort(SortingAlgorithm):
                     winners.append(arr[i])
 
         return right-len(losers)+1, arr[:left] + winners + losers + arr[right+1:]
+
+    def getNumRounds(self) -> int:
+        return int(math.log2(self.numPlayers))
+
+    def toString(self) -> str:
+        return "QS"
 
 class MergeSort(SortingAlgorithm):
     def runAllMatches(self):
@@ -181,6 +202,12 @@ class MergeSort(SortingAlgorithm):
 
         # print(arr)
         return arr
+
+    def getNumRounds(self) -> int:
+        return int(math.log2(self.numPlayers))
+
+    def toString(self) -> str:
+        return "MS"
 
 class HeapSort(SortingAlgorithm):
     def runAllMatches(self):
@@ -255,3 +282,6 @@ class HeapSort(SortingAlgorithm):
 
     def heapRight(self, i : int) -> int:
         return 2*i + i
+
+    def toString(self) -> str:
+        return "HS"

@@ -251,7 +251,37 @@ def proportionCorrectPositionsVector(correctRanking : List[List[int]], ranking :
                 
     return np.asarray(vec)
             
-    
+def combineRankings(rankings : List[List[List[int]]]) -> List[List[int]]:
+    '''Combines multiple rankings into a single ranking based on a weighted-sum of positions for each player'''
+    # For each ranking we assign 0 points for winning, 1 point for second place etc. and then create our final ranking on these points
+    totalPoints = [0 for i in range(len(rankings[0]))]
+    for ranking in rankings:
+        for points, position in enumerate(ranking):
+            for player in position:
+                totalPoints[player] += points
+
+    newRanking = [i for i in range(len(rankings[0]))]
+    newRanking.sort(key=lambda x: totalPoints[x])
+
+    # Now go through newRanking and combine any adjacent players who have the same number of points
+    actualNewRanking = []
+    currentPlayers = [newRanking[0]]
+    for player in newRanking[1:]:
+        if len(currentPlayers) == 0 or totalPoints[player] == totalPoints[currentPlayers[0]]:
+            currentPlayers.append(player)
+        else:
+            actualNewRanking.append(currentPlayers)
+            for _ in range(len(currentPlayers)-1):
+                actualNewRanking.append([])
+            currentPlayers = [player]
+
+    actualNewRanking.append(currentPlayers)
+    for _ in range(len(currentPlayers)-1):
+        actualNewRanking.append([])
+
+    return actualNewRanking
+
+
 if __name__ == '__main__':
 
     rank = [[0],[1,2],[],[4],[3,5,6],[],[],[7,8],[],[9],[10]]
@@ -273,3 +303,10 @@ if __name__ == '__main__':
 
     print(getRankingSimilarity(rank, [[i] for i in range(11)]))
     print(proportionCorrectPositionsVector([[i] for i in range(11)], rank))
+
+    rank1 = [[0],[1],[2],[3],[4],[5],[6]]
+    rank2 = [[0],[2],[1],[3],[5],[4],[6]]
+    rank3 = [[0],[1],[2],[3],[4,5,6],[],[]]
+    ranks = [rank1, rank2, rank3]
+
+    print(combineRankings(ranks))
