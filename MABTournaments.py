@@ -110,6 +110,7 @@ class UCB(MAB):
 
 class TS(MAB):
     def chooseArm(self) -> List[int]:
+        # print(len(self.schedule), len(self.arms))
         maxStrengthExpectation = 0
         nextMatch = []
         for match in self.arms:

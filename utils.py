@@ -4,7 +4,7 @@ import random
 from itertools import permutations
 import math
 
-def generateStrengths(numPlayers : int) -> np.ndarray:
+def generateStrengths(numPlayers : int, strongTransitivity = False) -> np.ndarray:
     '''Returns a square numpy array of relative strengths between players.'''
 
     strengths = np.zeros([numPlayers,numPlayers])
@@ -20,10 +20,16 @@ def generateStrengths(numPlayers : int) -> np.ndarray:
                 else:
                     for k in range(numPlayers):
                         if k not in [i,j] and strengths[i,k] > 0 and strengths[k,j] > 0:
-                            if strengths[i,k] > 0.5 and strengths[k,j] > 0.5 and tempStrength < 0.5:
-                                transitive = False
-                            elif strengths[i,k] < 0.5 and strengths[k,j] < 0.5 and tempStrength > 0.5:
-                                transitive = False
+                            if not strongTransitivity:
+                                if strengths[i,k] > 0.5 and strengths[k,j] > 0.5 and tempStrength < 0.5:
+                                    transitive = False
+                                elif strengths[i,k] < 0.5 and strengths[k,j] < 0.5 and tempStrength > 0.5:
+                                    transitive = False
+                            else:
+                                if strengths[i,k] > 0.5 and strengths[k,j] > 0.5 and tempStrength < max(strengths[i,k], strengths[k,j]):
+                                    transitive = False
+                                elif strengths[i,k] < 0.5 and strengths[k,j] < 0.5 and tempStrength > min(strengths[i,k], strengths[k,j]):
+                                    transitive = False
             strengths[i,j] = tempStrength
             strengths[j,i] = 1-tempStrength
 
@@ -87,9 +93,12 @@ def cosineSimilarity(vec1 : List[int], vec2 : List[int], start=1) -> float:
     v2 += start-m
     return np.dot(v1,v2)/(np.linalg.norm(v1)*np.linalg.norm(v2))
 
-def getPositionsVector(ranking : List[List[int]]) -> List[int]:
+def getPositionsVector(ranking : List[List[int]], startAtZero=True) -> List[int]:
     '''Takes a 'ranking' of players in order from winner to loser and returns a vector whose ith element is the position of the ith player in the ranking.'''
-    return [ranking.index([i]) for i in range(len(ranking))]
+    if startAtZero:
+        return [ranking.index([i]) for i in range(len(ranking))]
+    else:
+        return [ranking.index([i])+1 for i in range(len(ranking))]
 
 def randomlyCollapseJointPositions(ranking : List[List[int]]) -> List[List[int]]:
     '''Given a ranking that may contain joint positions, this will return a ranking that aligns with the original in all places except between players that share the same original joint-position.'''
@@ -260,7 +269,7 @@ if __name__ == '__main__':
 
     for i, r in enumerate(rs):
         if r in rs[i+1:]:
-            print("shit")
+            print("oops")
 
     print(getRankingSimilarity(rank, [[i] for i in range(11)]))
     print(proportionCorrectPositionsVector([[i] for i in range(11)], rank))

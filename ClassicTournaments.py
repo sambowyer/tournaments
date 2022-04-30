@@ -241,7 +241,7 @@ class DoubleElimination(Tournament):
         totalWins[self.winnerTreeWinner] += 1  # to account for the extra game that self.loserTreeWinner may have won
         ranking = sorted(ranking, key = lambda x: totalWins[x], reverse=True)
         totalWins = sorted(totalWins, reverse=True)
-        print(ranking, totalWins)
+        # print(ranking, totalWins)
 
         return combineJointPositionsInRanking(ranking, totalWins)[0]
 

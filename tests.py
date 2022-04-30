@@ -226,7 +226,7 @@ def prelimTest():
     n = 16
     numGames = 100
 
-    tournamentNames = ["RR1", "RR10", "RR100", "SE", "DE", "SW", "IS", "BIS", "BS", "SS", "QS", "MS", "HS", "IS7", "BIS7", "BS7", "SS7", "QS7", "MS7", "HS7"]
+    tournamentNames = ["RR1", "RR10", "RR100", "SE", "DE", "SW", "IS", "IS7", "BIS", "BIS7", "BS", "BS7", "SS", "SS7", "QS", "QS7", "MS", "MS7", "HS", "HS7", "UCB", "TS", "EG0_01", "EG0_2", "EG0_5"]
     stats = {}
     for t in tournamentNames:
         stats[t] = {"correctPlaces" : np.zeros(n), "cosine" : 0, "cosineSq" : 0, "eloCorrectPlaces" : np.zeros(n), "eloCosine" : 0, "eloCosineSq" : 0,  "numMatches" : 0}
@@ -235,28 +235,33 @@ def prelimTest():
         strengths = generateStrengths(n)
         trueRanking = getTrueRanking(strengths)
 
-        RR1   = RoundRobin(strengths, 1)
-        RR10  = RoundRobin(strengths, 10)
-        RR100 = RoundRobin(strengths, 100)
-        SE    = SingleElimination(strengths)
-        DE    = DoubleElimination(strengths)
-        SW    = Swiss(strengths)
-        IS    = InsertionSort(strengths)
-        BIS   = BinaryInsertionSort(strengths)
-        BS    = BubbleSort(strengths)
-        SS    = SelectionSort(strengths)
-        QS    = QuickSort(strengths)
-        MS    = MergeSort(strengths)
-        HS    = HeapSort(strengths)
-        IS7   = InsertionSort(strengths, bestOf=7)
-        BIS7  = BinaryInsertionSort(strengths, bestOf=7)
-        BS7   = BubbleSort(strengths, bestOf=7)
-        SS7   = SelectionSort(strengths, bestOf=7)
-        QS7   = QuickSort(strengths, bestOf=7)
-        MS7   = MergeSort(strengths, bestOf=7)
-        HS7   = HeapSort(strengths, bestOf=7)
+        RR1    = RoundRobin(strengths, 1)
+        RR10   = RoundRobin(strengths, 10)
+        RR100  = RoundRobin(strengths, 100)
+        SE     = SingleElimination(strengths)
+        DE     = DoubleElimination(strengths)
+        SW     = Swiss(strengths)
+        IS     = InsertionSort(strengths)
+        BIS    = BinaryInsertionSort(strengths)
+        BS     = BubbleSort(strengths)
+        SS     = SelectionSort(strengths)
+        QS     = QuickSort(strengths)
+        MS     = MergeSort(strengths)
+        HS     = HeapSort(strengths)
+        IS7    = InsertionSort(strengths, bestOf=7)
+        BIS7   = BinaryInsertionSort(strengths, bestOf=7)
+        BS7    = BubbleSort(strengths, bestOf=7)
+        SS7    = SelectionSort(strengths, bestOf=7)
+        QS7    = QuickSort(strengths, bestOf=7)
+        MS7    = MergeSort(strengths, bestOf=7)
+        HS7    = HeapSort(strengths, bestOf=7)
+        U      = UCB(strengths)
+        T      = TS(strengths, patience=2)
+        EG0_01 = EG(strengths, epsilon=0.01)
+        EG0_2  = EG(strengths, epsilon=0.2)
+        EG0_5  = EG(strengths, epsilon=0.5)
 
-        tournaments = [RR1, RR10, RR100, SE, DE, SW, IS, BIS, BS, SS, QS, MS, HS, IS7, BIS7, BS7, SS7, QS7, MS7, HS7]
+        tournaments = [RR1, RR10, RR100, SE, DE, SW, IS, BIS, BS, SS, QS, MS, HS, IS7, BIS7, BS7, SS7, QS7, MS7, HS7, U, T, EG0_01, EG0_2, EG0_5]
 
         for i, tournament in enumerate(tournaments):
             tournament.verbose = False
@@ -282,6 +287,7 @@ def prelimTest():
             #         stats[tournamentNames[i]]["correctPlaces"][j] += 1
             #     if eloRanking[j] == place:
             #         stats[tournamentNames[i]]["eloCorrectPlaces"][j] += 1
+            print(tournamentNames[i])
         
         print(f"Run {runNum+1}/{numGames } done.")
 
@@ -303,7 +309,7 @@ def prelimTest():
         # print(f"{tournamentNames[i]}\n {stats[tournamentNames[i]]}\n")
 
     
-    validTournamentNames = ["RR1", "RR10", "RR100", "SE", "DE", "SW", "IS", "IS7", "BIS", "BIS7", "BS", "BS7", "SS", "SS7", "QS", "QS7", "MS", "MS7", "HS", "HS7"]
+    validTournamentNames = ["RR1", "RR10", "RR100", "SE", "DE", "SW", "IS", "IS7", "BIS", "BIS7", "BS", "BS7", "SS", "SS7", "QS", "QS7", "MS", "MS7", "HS", "HS7", "UCB", "TS", "EG0_01", "EG0_2", "EG0_5"]
 
     cosineStds    = [math.sqrt(stats[t]["cosineSq"]-stats[t]["cosine"]**2) for t in validTournamentNames]
     eloCosineStds = [math.sqrt(stats[t]["eloCosineSq"]-stats[t]["eloCosine"]**2) for t in validTournamentNames]
@@ -341,9 +347,10 @@ def prelimTest():
     makeDoubledBarChart(validTournamentNames, cosineStdsScaled, eloCosineStdsScaled, "Predicted Ranking", "Elo Ranking", f"Standard deviation of average cosine similarity to true ranking divided by mean number of matches in tournament", "Tournament", "Similarity / # Matches", "img/cosineScaledStd.png")
 
 # runTournamentTest()
-# prelimTest()
+prelimTest()
+# print(555)
 
-for _ in range(1):
+for _ in range(0):
     strengths = generateStrengths(6)
     # print(strengths)
     # SE = SingleElimination(strengths, verbose=True)
