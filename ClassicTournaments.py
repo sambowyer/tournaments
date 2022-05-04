@@ -126,7 +126,7 @@ class SingleElimination(Tournament):
         return int(math.log2(self.numPlayers))
 
     def toString(self) -> str:
-        return "SE"
+        return "SE3pp" if self.thirdPlacePlayoff else "SE"
 
 class DoubleElimination(Tournament):
     def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1, verbose=True):

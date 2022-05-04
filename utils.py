@@ -42,23 +42,23 @@ def getStrengthsSubmatrix(strengths: np.ndarray, validPlayers : List[int]) -> np
     return nextRoundStrengths
 
 def combineJointPositionsInRanking(ranking : List[int], values : List) -> (List[List[int]], List):
-        outputPlayers = [[ranking[0]]]
-        outputValues  = [values[0]]
-        currentValue = values[0]
-        lastNonEmptyIndex=0
-        
-        for i in range(1,len(ranking)):
-            if values[i] == currentValue:
-                outputPlayers[lastNonEmptyIndex].append(ranking[i])
-                outputPlayers.append([])
-                outputValues.append(None)
-            else:
-                outputPlayers.append([ranking[i]])
-                outputValues.append(values[i])
-                lastNonEmptyIndex = i
-                currentValue = values[i]
-        
-        return outputPlayers, outputValues
+    outputPlayers = [[ranking[0]]]
+    outputValues  = [values[0]]
+    currentValue = values[0]
+    lastNonEmptyIndex=0
+    
+    for i in range(1,len(ranking)):
+        if values[i] == currentValue:
+            outputPlayers[lastNonEmptyIndex].append(ranking[i])
+            outputPlayers.append([])
+            outputValues.append(None)
+        else:
+            outputPlayers.append([ranking[i]])
+            outputValues.append(values[i])
+            lastNonEmptyIndex = i
+            currentValue = values[i]
+    
+    return outputPlayers, outputValues
 
 def getDominationDegreeRanking(dominationMatrix  : np.ndarray) -> (List[List[int]], List[int]):
     '''Returns the longest path in the dominance graph given by 'dominationMatrix')'''
@@ -116,7 +116,7 @@ def randomlyCollapseJointPositions(ranking : List[List[int]]) -> List[List[int]]
 def getNumberOfPossibleDefiniteRankings(ranking : List[List[int]]) -> int:
     return np.prod([math.factorial(len(x)) for x in ranking])
 
-def getRankingSimilarity(ranking1 : List[List[int]], ranking2 : List[List[int]], numSamples="all") -> (float, float):
+def getRankingSimilarity(ranking1 : List[List[int]], ranking2 : List[List[int]], numSamples="all", startAtZero=True) -> (float, float):
     '''If numSamples="all", this returns the average cosine similarity between all possible rankings that could come from 'ranking1' and 'ranking2' if we remove any joint-positions along with the standard deviation of those similarities.
     Otherwise, we pick numSamples (an int) number of possible rankings that would align with each ranking and the corresponding joint-positions and return the mean and UNBIASED sample standard deviation of those samples. '''
     # First check whether either of ranking1 and ranking2 don't actually contain any joint positions (will help cut down on computations down the line)
@@ -126,9 +126,9 @@ def getRankingSimilarity(ranking1 : List[List[int]], ranking2 : List[List[int]],
     # TODO: Here we split up the case that only one of noJoints1 and noJoints2 is true in order to limit calls to randomlyCollapseJointPositions() (which is relatively inexpensive, really), but is this efficiency worth the ugly (semi-redundant) code below?
 
     if noJoints1 and noJoints2:
-        return cosineSimilarity(getPositionsVector(ranking1), getPositionsVector(ranking2)), 0
+        return cosineSimilarity(getPositionsVector(ranking1, startAtZero), getPositionsVector(ranking2, startAtZero)), 0
     elif not noJoints1 and noJoints2:
-        return getRankingSimilarity(ranking2, ranking1, numSamples)
+        return getRankingSimilarity(ranking2, ranking1, numSamples, startAtZero)
     elif noJoints1 and not noJoints2:
         # so we only need to collapse joint positions for ranking2
         if numSamples == "all":

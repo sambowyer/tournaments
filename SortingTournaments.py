@@ -42,7 +42,7 @@ class InsertionSort(SortingAlgorithm):
         self.ranking = newRanking
 
     def toString(self) -> str:
-        return "IS"
+        return f"IS{self.bestOf}"
 
 class BinaryInsertionSort(SortingAlgorithm):
     def runAllMatches(self):
@@ -69,7 +69,7 @@ class BinaryInsertionSort(SortingAlgorithm):
         # print(self.ranking)
 
     def toString(self) -> str:
-        return "BIS"
+        return f"BIS{self.bestOf}"
 
 class BubbleSort(SortingAlgorithm):
     def runAllMatches(self):
@@ -94,7 +94,7 @@ class BubbleSort(SortingAlgorithm):
             n = m
 
     def toString(self) -> str:
-        return "BS"
+        return f"BS{self.bestOf}"
 
 class SelectionSort(SortingAlgorithm):
     def runAllMatches(self):
@@ -120,7 +120,7 @@ class SelectionSort(SortingAlgorithm):
         # print(self.ranking)
     
     def toString(self) -> str:
-        return "SS"
+        return f"SS{self.bestOf}"
 
 class QuickSort(SortingAlgorithm):
     def runAllMatches(self):
@@ -161,7 +161,7 @@ class QuickSort(SortingAlgorithm):
         return int(math.log2(self.numPlayers))
 
     def toString(self) -> str:
-        return "QS"
+        return f"QS{self.bestOf}"
 
 class MergeSort(SortingAlgorithm):
     def runAllMatches(self):
@@ -207,7 +207,7 @@ class MergeSort(SortingAlgorithm):
         return int(math.log2(self.numPlayers))
 
     def toString(self) -> str:
-        return "MS"
+        return f"MS{self.bestOf}"
 
 class HeapSort(SortingAlgorithm):
     def runAllMatches(self):
@@ -284,4 +284,4 @@ class HeapSort(SortingAlgorithm):
         return 2*i + i
 
     def toString(self) -> str:
-        return "HS"
+        return f"HS{self.bestOf}"
