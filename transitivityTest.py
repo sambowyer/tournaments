@@ -15,7 +15,7 @@ import time
 headers = ["tournament", "numPlayers", "strongTransitivity", "numMatches", "numRounds", "bestOf",
            "cosine0", "cosine1", "eloCosine0", "eloCosine1", "correctPositions", "eloCorrectPositions"]
 
-outputCSV = "csvs/classicalAndSortingTests.csv"
+outputCSV = "csvs/transitivityTests.csv"
 
 writeHeaders(outputCSV, headers)
 
@@ -45,19 +45,33 @@ def runTournamentForStats(tournament : Tournament, strongTransitivity = False) -
 
     return stats
 
-bestOfs = [1,3,5,7,9,51,101]
-numPlayers = [4,8,16,32,64]
+optimalUCBParams = {"exlplorationFolds" : None,
+                    "patience": None,
+                    "maxLockInProportion": None}
+
+optimalTSParams = {"exlplorationFolds" : None,
+                    "patience": None,
+                    "maxLockInProportion": None}
+
+optimalEGParams = {"exlplorationFolds" : None,
+                    "patience": None,
+                    "maxLockInProportion": None,
+                    "epsilon": None}
+
+numPlayers = 16
 numTests = 1000
 
 for i in range(numTests):
     start = time.time()
     statsCollection = []
-    for n in numPlayers:
-        strengths = generateStrengths(n)
-        tournaments = []
+    
+    tournaments = []
+
+    for st in [True, False]:
+        strengths = generateStrengths(numPlayers, strongTransitivity=st)
 
         # Round Robin Tests
-        for numFolds in [1,2,3,5,10,25,50,100]:
+        for numFolds in [1,5,25,100]:
             tournaments.append(RoundRobin(strengths, numFolds, verbose=False))
 
         # Single Elimination
@@ -71,13 +85,21 @@ for i in range(numTests):
         tournaments.append(Swiss(strengths, verbose=False))
 
         # Sorting Algos
-        for bestOf in bestOfs:
-            for algo in [InsertionSort, BinaryInsertionSort, BubbleSort, SelectionSort, QuickSort, MergeSort, HeapSort]:
-                tournaments.append(algo(strengths, bestOf=bestOf, verbose=False))
+        for algo in [InsertionSort, BinaryInsertionSort, BubbleSort, SelectionSort, QuickSort, MergeSort, HeapSort]:
+            tournaments.append(algo(strengths, verbose=False))
 
-        
+        # UCB
+        tournaments.append(UCB(strengths, explorationFolds=optimalUCBParams["explorationFolds"], patience=optimalUCBParams["patience"], maxLockInProportion=optimalUCBParams["maxLockInProportion"], verbose=False))
+
+        # TS - too large a patience will result in TS taking FOREVER to finish
+        tournaments.append(TS(strengths, explorationFolds=optimalTSParams["explorationFolds"], patience=optimalTSParams["patience"], maxLockInProportion=optimalTSParams["maxLockInProportion"], verbose=False))
+
+        # EG
+        tournaments.append(EG(strengths, explorationFolds=optimalEGParams["explorationFolds"], patience=optimalEGParams["patience"], maxLockInProportion=optimalEGParams["maxLockInProportion"], epsilon=optimalEGParams["epsilon"], verbose=False))
+
+
         for t in tournaments:
-            statsCollection.append(runTournamentForStats(t))
+            statsCollection.append(runTournamentForStats(t, strongTransitivity=st))
 
     writeStatsCollectionToCSV(statsCollection, outputCSV)
 

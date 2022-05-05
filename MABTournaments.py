@@ -6,11 +6,12 @@ from Tournament import Tournament
 from utils import *
 
 class MAB(Tournament):
-    def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1, verbose=True, explorationFolds=3, patience=3):
+    def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1, verbose=True, explorationFolds=3, patience=3, maxLockInProportion=0.25):
         super().__init__(strengths, eloFunc, bestOf, verbose)
 
         self.explorationFolds = explorationFolds
         self.patience = patience
+        self.maxLockInProportion = maxLockInProportion
 
         self.explorationCount = 0
 
@@ -38,23 +39,26 @@ class MAB(Tournament):
             match = self.arms[self.explorationCount]
             self.explorationCount = (self.explorationCount + 1) % len(self.arms)
             return match
+        elif len(self.schedule) >= 0.5*self.numPlayers*(self.numPlayers-1)*200:  # terminate tournament if it's ran for the equivalent of 200 round robin folds
+            return None
         else:
-            # Check if a definite ranking has been found AND more than half the arms have been locked-in
-            if len(self.arms) <= 0.25*self.numPlayers*(self.numPlayers-1): # and [] not in self.getRanking()
+            # Check if a definite ranking has been found AND more than self.maxLockInProportion the arms have been locked-in
+            if len(self.arms) <= (1-self.maxLockInProportion)*0.5*self.numPlayers*(self.numPlayers-1): # and [] not in self.getRanking()
                 return None
 
             # Check if we should 'lock-in' any arms
-            prevMatches = [sorted(x) for x in self.schedule[-self.patience:]]
-            lockIn = True
-            for match in prevMatches[1:]:
-                if match != prevMatches[0]:
-                    lockIn = False
-                    break
-            if lockIn:
-                lockedInMatch = tuple(prevMatches[0])
-                self.arms.remove(lockedInMatch)
-                self.numWins.pop(lockedInMatch)
-                self.numLosses.pop(lockedInMatch)
+            if len(self.schedule) >= self.patience:
+                prevMatches = [sorted(x) for x in self.schedule[-self.patience:]]
+                lockIn = True
+                for match in prevMatches[1:]:
+                    if match != prevMatches[0]:
+                        lockIn = False
+                        break
+                if lockIn:
+                    lockedInMatch = tuple(prevMatches[0])
+                    self.arms.remove(lockedInMatch)
+                    self.numWins.pop(lockedInMatch)
+                    self.numLosses.pop(lockedInMatch)
 
             if len(self.arms) == 0:
                 return None
@@ -120,7 +124,8 @@ class TS(MAB):
         maxStrengthExpectation = 0
         nextMatch = []
         for match in self.arms:
-            strengthExpectation = np.random.beta(self.numWins[match] + 1, self.numLosses[match] + 1)
+            # sample twice since we've set an arbitrary home-away order on each match
+            strengthExpectation = max(np.random.beta(self.numWins[match] + 1, self.numLosses[match] + 1), 1 - np.random.beta(self.numLosses[match] + 1, self.numWins[match] + 1))
             if strengthExpectation > maxStrengthExpectation:
                 maxStrengthExpectation = strengthExpectation
                 nextMatch = match 
@@ -130,8 +135,8 @@ class TS(MAB):
         return "TS"
 
 class EG(MAB):
-    def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1, verbose=True, explorationFolds=3, patience=3, epsilon=0.25):
-        super().__init__(strengths, eloFunc, bestOf, verbose, explorationFolds, patience)
+    def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1, verbose=True, explorationFolds=3, patience=3, maxLockInProportion=0.25, epsilon=0.25):
+        super().__init__(strengths, eloFunc, bestOf, verbose, explorationFolds, patience, maxLockInProportion)
         self.epsilon = epsilon
 
     def chooseArm(self) -> List[int]:

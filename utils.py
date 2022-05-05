@@ -143,7 +143,7 @@ def getRankingSimilarity(ranking1 : List[List[int]], ranking2 : List[List[int]],
                 total += similarity
                 totalSquares += similarity**2
             mean = total/numPossibleComparisons
-            return mean, math.sqrt((numPossibleComparisons/(numPossibleComparisons-1))*((totalSquares/numPossibleComparisons)-mean**2))
+            return mean #, math.sqrt((numPossibleComparisons/(numPossibleComparisons-1))*((totalSquares/numPossibleComparisons)-mean**2))
 
         else:
             total = 0
@@ -153,7 +153,7 @@ def getRankingSimilarity(ranking1 : List[List[int]], ranking2 : List[List[int]],
                 total += similarity
                 totalSquares += similarity**2
             mean = total/numSamples
-            return mean, math.sqrt((numSamples/(numSamples-1))*((totalSquares/numSamples)-mean**2))
+            return mean #, math.sqrt((numSamples/(numSamples-1))*((totalSquares/numSamples)-mean**2))
     else:
         # so we need to collapse joint positions for ranking1 and ranking2
         if numSamples == "all":
@@ -169,7 +169,7 @@ def getRankingSimilarity(ranking1 : List[List[int]], ranking2 : List[List[int]],
                     total += similarity
                     totalSquares += similarity**2
             mean = total / numPossibleComparisons
-            return mean, math.sqrt((numPossibleComparisons/(numPossibleComparisons-1))*((totalSquares/numPossibleComparisons)-mean**2))
+            return mean #, math.sqrt((numPossibleComparisons/(numPossibleComparisons-1))*((totalSquares/numPossibleComparisons)-mean**2))
 
         else:
             total = 0
@@ -179,7 +179,7 @@ def getRankingSimilarity(ranking1 : List[List[int]], ranking2 : List[List[int]],
                 total += similarity
                 totalSquares += similarity**2
             mean = total/numSamples
-            return mean, math.sqrt((numSamples/(numSamples-1))*((totalSquares/numSamples)-mean**2))
+            return mean #, math.sqrt((numSamples/(numSamples-1))*((totalSquares/numSamples)-mean**2))
 
 def getPossibleDefiniteRankings(ranking : List[List[int]], maxNum=None) -> Generator[List[List[int]], None, None]:
     if maxNum is None:

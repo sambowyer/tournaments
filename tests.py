@@ -148,7 +148,7 @@ def runTournamentTest():
     runTournament(HS, title="Heap Sort", filename="img/wins and elo plots/HS.png", id=count)
     count += 1
 
-def makeBarChart(xticks : List[str], yvalues : List, title : str, xlabel : str, ylabel : str, filename : str, yRange=None, yError=None):
+def makeBarChart(xticks : List[str], yvalues : List, title : str, xlabel : str, ylabel : str, filename : str, yRange=None, yError=None, sizeInches=[17,10]):
     fig, ax = plt.subplots()
     rects1 = ax.bar(xticks, yvalues)
     if yError is not None:
@@ -173,12 +173,12 @@ def makeBarChart(xticks : List[str], yvalues : List, title : str, xlabel : str, 
     autolabel(rects1)
 
     # fig.tight_layout()
-    fig.set_size_inches(17, 10)
+    fig.set_size_inches(sizeInches[0], sizeInches[1])
 
     plt.savefig(filename)
     plt.close()
 
-def makeDoubledBarChart(xticks : List[str], yvalues1 : List, yvalues2 : List, ylabel1 : str, ylabel2 : str, title : str, xlabel : str, ylabel : str, filename : str, yRange=None, yErrors=None):
+def makeDoubledBarChart(xticks : List[str], yvalues1 : List, yvalues2 : List, ylabel1 : str, ylabel2 : str, title : str, xlabel : str, ylabel : str, filename : str, yRange=None, yErrors=None, sizeInches=[17,10]):
     fig, ax = plt.subplots()
     x = np.arange(len(xticks))
     width=0.35
@@ -217,7 +217,7 @@ def makeDoubledBarChart(xticks : List[str], yvalues1 : List, yvalues2 : List, yl
 
     # fig.tight_layout()
 
-    fig.set_size_inches(17, 10)
+    fig.set_size_inches(sizeInches[0], sizeInches[1])
 
     plt.savefig(filename)
     plt.close()
