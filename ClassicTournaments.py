@@ -25,7 +25,7 @@ class RoundRobin(Tournament):
             for x in range(self.numPlayers):
                 for y in range(x+1, self.numPlayers):
                     matches.append([x,y])
-        random.shuffle(matches)
+        # random.shuffle(matches)
         return deque(matches)
 
     def getRanking(self) -> List[List[int]]:

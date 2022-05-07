@@ -6,12 +6,13 @@ from Tournament import Tournament
 from utils import *
 
 class MAB(Tournament):
-    def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1, verbose=True, explorationFolds=3, patience=3, maxLockInProportion=0.25):
+    def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1, verbose=True, explorationFolds=3, patience=3, maxLockInProportion=0.25, maxNumMatches=None):
         super().__init__(strengths, eloFunc, bestOf, verbose)
 
         self.explorationFolds = explorationFolds
         self.patience = patience
         self.maxLockInProportion = maxLockInProportion
+        self.maxNumMatches = maxNumMatches
 
         self.explorationCount = 0
 
@@ -35,11 +36,13 @@ class MAB(Tournament):
         return meanRewards
 
     def getNextMatch(self) -> List[int]:
-        if len(self.schedule) < len(self.arms)*self.explorationFolds:
+        if len(self.schedule) < 0.5*self.numPlayers*(self.numPlayers-1)*self.explorationFolds:
             match = self.arms[self.explorationCount]
             self.explorationCount = (self.explorationCount + 1) % len(self.arms)
             return match
         elif len(self.schedule) >= 0.5*self.numPlayers*(self.numPlayers-1)*200:  # terminate tournament if it's ran for the equivalent of 200 round robin folds
+            return None
+        elif self.maxNumMatches is not None and len(self.schedule) >= self.maxNumMatches:
             return None
         else:
             # Check if a definite ranking has been found AND more than self.maxLockInProportion the arms have been locked-in
@@ -62,7 +65,6 @@ class MAB(Tournament):
 
             if len(self.arms) == 0:
                 return None
-
             # Now apply whichever particular MAB policy we want to use in order to pick the next arm (match)
             return self.chooseArm()
 
@@ -135,8 +137,8 @@ class TS(MAB):
         return "TS"
 
 class EG(MAB):
-    def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1, verbose=True, explorationFolds=3, patience=3, maxLockInProportion=0.25, epsilon=0.25):
-        super().__init__(strengths, eloFunc, bestOf, verbose, explorationFolds, patience, maxLockInProportion)
+    def __init__(self, strengths, eloFunc=lambda x: 1/(1+10**(x/400)), bestOf=1, verbose=True, explorationFolds=3, patience=3, maxLockInProportion=0.25, epsilon=0.25, maxNumMatches=None):
+        super().__init__(strengths, eloFunc, bestOf, verbose, explorationFolds, patience, maxLockInProportion, maxNumMatches)
         self.epsilon = epsilon
 
     def chooseArm(self) -> List[int]:

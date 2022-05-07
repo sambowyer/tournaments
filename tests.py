@@ -19,7 +19,9 @@ def runTournament(tournament : Tournament, graphStep=1, title="", filename="", i
     #     eloScoresHistory.append(tournament.eloScores.copy())
 
     #     tournament.runNextMatch()
+    print("starting")
     tournament.runAllMatches()
+    print("done")
 
     # TODO: Clean up this monstrosity (USE PANDAS DATAFRAMES)
     totalWinsHistory = tournament.getTotalWinsHistory()
@@ -61,7 +63,17 @@ def runTournament(tournament : Tournament, graphStep=1, title="", filename="", i
                        f"Avg WRL ({getRankingSimilarity(trueRanking, awrlPlayers)[0]:.4f})" : zip(awrlPlayers, awrlNumbers), 
                        f"WR Dom ({getRankingSimilarity(trueRanking, wrPlayers)[0]:.4f})" : zip(wrPlayers, wrNumbers), 
                        f"WRL Dom ({getRankingSimilarity(trueRanking, wrlPlayers)[0]:.4f})" : zip(wrlPlayers, wrlNumbers)})
+
+                    #    f"Pred ({getRankingSimilarity(trueRanking, predictedRanking):.4f})" : predictedRanking, 
+                    #    f"Wins ({getRankingSimilarity(trueRanking, winPlayers):.4f})" : zip(winPlayers, winNumbers), 
+                    #    f"Elo ({getRankingSimilarity(trueRanking, eloPlayers):.4f})" : zip(eloPlayers, eloNumbers), 
+                    #    f"Avg Str ({getRankingSimilarity(trueRanking, strPlayers):.4f})" : zip(strPlayers, strNumbers), 
+                    #    f"Avg WR ({getRankingSimilarity(trueRanking, awrPlayers):.4f})" : zip(awrPlayers, awrNumbers), 
+                    #    f"Avg WRL ({getRankingSimilarity(trueRanking, awrlPlayers):.4f})" : zip(awrlPlayers, awrlNumbers), 
+                    #    f"WR Dom ({getRankingSimilarity(trueRanking, wrPlayers):.4f})" : zip(wrPlayers, wrNumbers), 
+                    #    f"WRL Dom ({getRankingSimilarity(trueRanking, wrlPlayers):.4f})" : zip(wrlPlayers, wrlNumbers)})
     df.set_index("Pos.", inplace=True)
+    print("ah")
     # print(df.to_string())
     # df.drop(labels=["Avg WR", "Avg WRL"], axis=1, inplace=True)
     print(title)
@@ -347,30 +359,36 @@ def prelimTest():
     makeDoubledBarChart(validTournamentNames, cosineStdsScaled, eloCosineStdsScaled, "Predicted Ranking", "Elo Ranking", f"Standard deviation of average cosine similarity to true ranking divided by mean number of matches in tournament", "Tournament", "Similarity / # Matches", "img/cosineScaledStd.png")
 
 # runTournamentTest()
-prelimTest()
+# prelimTest()
 # print(555)
 
-for _ in range(0):
-    strengths = generateStrengths(6)
-    # print(strengths)
-    # SE = SingleElimination(strengths, verbose=True)
-    # runTournament(SE)
-    # SE = SingleElimination(strengths, thirdPlacePlayoff=True, verbose=True)
-    # runTournament(SE)
-    # DE = DoubleElimination(strengths, verbose=True)
-    # runTournament(DE)
-    # SE = SingleElimination(strengths, thirdPlacePlayoff=True, verbose=True)
-    # runTournament(SE)
-    U = UCB(strengths)
-    runTournament(U)
-    TS = TS(strengths)
-    runTournament(TS)
-    EG = EG(strengths)
-    runTournament(EG)
-    print(strengths)
-    print(U.winRatesLaplace)
-    print(TS.winRatesLaplace)
-    print(EG.winRatesLaplace)
+# for _ in range(0):
+#     strengths = generateStrengths(6)
+#     # print(strengths)
+#     # SE = SingleElimination(strengths, verbose=True)
+#     # runTournament(SE)
+#     # SE = SingleElimination(strengths, thirdPlacePlayoff=True, verbose=True)
+#     # runTournament(SE)
+#     # DE = DoubleElimination(strengths, verbose=True)
+#     # runTournament(DE)
+#     # SE = SingleElimination(strengths, thirdPlacePlayoff=True, verbose=True)
+#     # runTournament(SE)
+#     U = UCB(strengths)
+#     runTournament(U)
+#     TS = TS(strengths)
+#     runTournament(TS)
+#     EG = EG(strengths)
+#     runTournament(EG)
+#     print(strengths)
+#     print(U.winRatesLaplace)
+#     print(TS.winRatesLaplace)
+#     print(EG.winRatesLaplace)
 
 #     RR = RoundRobin(strengths, 50, verbose=False)
 #     runTournament(RR)
+
+# print(generateStrengths(16,  True))
+strengths = generateStrengths(16)
+SW = Swiss(strengths)
+# SW.runAllMatches()
+runTournament(SW)

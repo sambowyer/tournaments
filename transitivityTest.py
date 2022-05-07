@@ -17,7 +17,7 @@ headers = ["tournament", "numPlayers", "strongTransitivity", "numMatches", "numR
 
 outputCSV = "csvs/transitivityTests.csv"
 
-writeHeaders(outputCSV, headers)
+# writeHeaders(outputCSV, headers)
 
 def runTournamentForStats(tournament : Tournament, strongTransitivity = False) -> Dict:
     tournament.runAllMatches()
@@ -36,39 +36,39 @@ def runTournamentForStats(tournament : Tournament, strongTransitivity = False) -
              "numMatches": len(tournament.schedule),
              "numRounds": tournament.getNumRounds(),
              "bestOf": tournament.bestOf,
-             "cosine0": getRankingSimilarity(trueRanking, ranking, rankingSimNumSamples)[0], 
-             "cosine1": getRankingSimilarity(trueRanking, ranking, rankingSimNumSamples, False)[0],
-             "eloCosine0": getRankingSimilarity(trueRanking, eloRank, eloRankSimNumSamples)[0],
-             "eloCosine1": getRankingSimilarity(trueRanking, eloRank, eloRankSimNumSamples, False)[0], 
+             "cosine0": getRankingSimilarity(trueRanking, ranking, rankingSimNumSamples),#[0], 
+             "cosine1": getRankingSimilarity(trueRanking, ranking, rankingSimNumSamples, False),#[0],
+             "eloCosine0": getRankingSimilarity(trueRanking, eloRank, eloRankSimNumSamples),#[0],
+             "eloCosine1": getRankingSimilarity(trueRanking, eloRank, eloRankSimNumSamples, False),#[0], 
              "correctPositions": str(list(proportionCorrectPositionsVector(trueRanking, ranking))).strip("[]").replace(", ", "_"),
              "eloCorrectPositions": str(list(proportionCorrectPositionsVector(trueRanking, eloRank))).strip("[]").replace(", ", "_")}
 
     return stats
 
-optimalUCBParams = {"exlplorationFolds" : None,
-                    "patience": None,
-                    "maxLockInProportion": None}
+optimalUCBParams = {"explorationFolds" : 3,
+                    "patience": 4,
+                    "maxLockInProportion": 0.25}
 
-optimalTSParams = {"exlplorationFolds" : None,
-                    "patience": None,
-                    "maxLockInProportion": None}
+optimalTSParams = {"explorationFolds" : 3,
+                    "patience": 2,
+                    "maxLockInProportion": 0.25}
 
-optimalEGParams = {"exlplorationFolds" : None,
-                    "patience": None,
-                    "maxLockInProportion": None,
-                    "epsilon": None}
+optimalEGParams = {"explorationFolds" : 3,
+                    "patience": 4,
+                    "maxLockInProportion": 0.05,
+                    "epsilon": 0.1}
 
 numPlayers = 16
-numTests = 1000
+numTests = 150
 
 for i in range(numTests):
     start = time.time()
     statsCollection = []
-    
-    tournaments = []
 
-    for st in [True, False]:
+    for st in [False, True]:
+        tournaments = []
         strengths = generateStrengths(numPlayers, strongTransitivity=st)
+        # print("strengths made")
 
         # Round Robin Tests
         for numFolds in [1,5,25,100]:
@@ -100,6 +100,7 @@ for i in range(numTests):
 
         for t in tournaments:
             statsCollection.append(runTournamentForStats(t, strongTransitivity=st))
+            # print(t.toString(), len(t.schedule))
 
     writeStatsCollectionToCSV(statsCollection, outputCSV)
 

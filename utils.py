@@ -12,7 +12,13 @@ def generateStrengths(numPlayers : int, strongTransitivity = False) -> np.ndarra
     for i in range(numPlayers):
         for j in range(i+1, numPlayers):
             transitive = False
+            count = 0
             while not transitive:
+                count += 1
+                # print(count)
+                if count > 200000:
+                    return (generateStrengths(numPlayers, strongTransitivity))
+
                 transitive = True
                 tempStrength = random.uniform(0,1)
                 if tempStrength == 0.5:
@@ -124,9 +130,10 @@ def getRankingSimilarity(ranking1 : List[List[int]], ranking2 : List[List[int]],
     noJoints2 = max([len(x) for x in ranking2]) == 1
 
     # TODO: Here we split up the case that only one of noJoints1 and noJoints2 is true in order to limit calls to randomlyCollapseJointPositions() (which is relatively inexpensive, really), but is this efficiency worth the ugly (semi-redundant) code below?
+    # TODO: The second float we return has been taken out to help with testing --- maybe I'll add it back in, maybe not, who knows
 
     if noJoints1 and noJoints2:
-        return cosineSimilarity(getPositionsVector(ranking1, startAtZero), getPositionsVector(ranking2, startAtZero)), 0
+        return cosineSimilarity(getPositionsVector(ranking1, startAtZero), getPositionsVector(ranking2, startAtZero))#, 0
     elif not noJoints1 and noJoints2:
         return getRankingSimilarity(ranking2, ranking1, numSamples, startAtZero)
     elif noJoints1 and not noJoints2:
@@ -138,7 +145,9 @@ def getRankingSimilarity(ranking1 : List[List[int]], ranking2 : List[List[int]],
             
             possibleDefiniteRankings = getPossibleDefiniteRankings(ranking2)
             for definiteRanking2 in possibleDefiniteRankings:
-                similarity, _ = getRankingSimilarity(ranking1, definiteRanking2)
+                # similarity, _ = getRankingSimilarity(ranking1, definiteRanking2)
+                similarity = getRankingSimilarity(ranking1, definiteRanking2)
+
                 # print(definiteRanking2, similarity)
                 total += similarity
                 totalSquares += similarity**2
@@ -149,7 +158,9 @@ def getRankingSimilarity(ranking1 : List[List[int]], ranking2 : List[List[int]],
             total = 0
             totalSquares = 0
             for _ in range(numSamples):
-                similarity, _ = getRankingSimilarity(ranking1, randomlyCollapseJointPositions(ranking2))
+                # similarity, _ = getRankingSimilarity(ranking1, randomlyCollapseJointPositions(ranking2))
+                similarity = getRankingSimilarity(ranking1, randomlyCollapseJointPositions(ranking2))
+
                 total += similarity
                 totalSquares += similarity**2
             mean = total/numSamples
@@ -165,7 +176,9 @@ def getRankingSimilarity(ranking1 : List[List[int]], ranking2 : List[List[int]],
             for definiteRanking1 in possibleDefiniteRankings1:
                 possibleDefiniteRankings2 = getPossibleDefiniteRankings(ranking2)
                 for definiteRanking2 in possibleDefiniteRankings2:
-                    similarity, _ = getRankingSimilarity(definiteRanking1, definiteRanking2)
+                    # similarity, _ = getRankingSimilarity(definiteRanking1, definiteRanking2)
+                    similarity = getRankingSimilarity(definiteRanking1, definiteRanking2)
+
                     total += similarity
                     totalSquares += similarity**2
             mean = total / numPossibleComparisons
@@ -175,7 +188,8 @@ def getRankingSimilarity(ranking1 : List[List[int]], ranking2 : List[List[int]],
             total = 0
             totalSquares = 0
             for _ in range(numSamples):
-                similarity, _ = getRankingSimilarity(ranking1, randomlyCollapseJointPositions(ranking2))
+                # similarity, _ = getRankingSimilarity(ranking1, randomlyCollapseJointPositions(ranking2))
+                similarity = getRankingSimilarity(ranking1, randomlyCollapseJointPositions(ranking2))
                 total += similarity
                 totalSquares += similarity**2
             mean = total/numSamples
