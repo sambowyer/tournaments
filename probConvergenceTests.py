@@ -34,7 +34,7 @@ def meanError(matrix1 : np.ndarray, matrix2 : np.ndarray, excludeDiagonal=True) 
                 count += 1
     return total/count
     
-numTests = 50
+numTests = 100
 
 errors = {}
 numMatches = {}
@@ -43,11 +43,12 @@ for i in range(numTests):
     start = time.time()
     strengths = generateStrengths(16)
     R = RoundRobin(strengths, 200, verbose=False)
+    R2 = RoundRobin(strengths, 3, verbose=False)
     U = UCB(strengths, verbose=False, explorationFolds=3, patience=4, maxLockInProportion=0.25)
     T = TS(strengths, verbose=False, explorationFolds=3, patience=4, maxLockInProportion=0.25)
     E = EG(strengths, verbose=False, explorationFolds=3, patience=4, maxLockInProportion=0.25, epsilon=0.1)
 
-    for t in [R, U, T, E]:
+    for t in [R, U, T, E, R2]:
         if i == 0:
             errors[t.toString()] = []
             numMatches[t.toString()] = []
@@ -90,7 +91,7 @@ for i, tournamentValues in enumerate(averagedErrs):
     # print(i)
     newValues.append(tournamentValues + [np.nan for j in range(maxX-len(tournamentValues))])
 
-df = pd.DataFrame({"match": xVals, "RR": newValues[0], "UCB": newValues[1],  "TS": newValues[2],  "EG": newValues[3]})
-df.to_csv(f"csvs/probConvergenceTests{numTests}.csv", header=True)
+# df = pd.DataFrame({"match": xVals, "RR": newValues[0], "UCB": newValues[1],  "TS": newValues[2],  "EG": newValues[3]})
+# df.to_csv(f"csvs/probConvergenceTests{numTests}.csv", header=True)
 
 makeFitnessHistoryPlot(xVals, averagedErrs, list(errors.keys()), "ooh", "ahh.png")

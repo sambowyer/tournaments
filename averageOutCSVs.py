@@ -68,7 +68,7 @@ def averageOutCSV(inputCSV : str, outputCSV : str, identifyingHeaders : List, he
 
 # averageOutCSV("csvs/classicalAndSortingTests.csv", "csvs/classicalAndSortingTestsAveraged.csv", ["tournament", "numPlayers"], ["numMatches", "numRounds", "cosine0", "cosine1", "eloCosine0", "eloCosine1"])
 # averageOutCSV("csvs/MABTuningTestsFIXED.csv", "csvs/MABTuningTestsAveraged.csv", ["tournament","explorationFolds","patience","maxLockInProportion"], ["numMatches", "numRounds", "cosine0", "cosine1", "eloCosine0", "eloCosine1"], sortOutPositions=False)
-averageOutCSV("csvs/MABMainTests.csv", "csvs/MABMainTestsAveraged.csv", ["tournament", "numPlayers"], ["numMatches", "numRounds", "cosine0", "cosine1", "eloCosine0", "eloCosine1"])
+# averageOutCSV("csvs/MABMainTests.csv", "csvs/MABMainTestsAveraged.csv", ["tournament", "numPlayers"], ["numMatches", "numRounds", "cosine0", "cosine1", "eloCosine0", "eloCosine1"])
 # averageOutCSV("csvs/transitivityTests.csv", "csvs/transitivityTestsAveraged.csv", ["tournament", "numPlayers", "strongTransitivity"], ["numMatches", "numRounds", "cosine0", "cosine1", "eloCosine0", "eloCosine1"])
 # averageOutCSV("csvs/fixedMatchesTests12000.csv", "csvs/fixedMatchesTests12000Averaged.csv", ["tournament", "numPlayers"], ["numMatches", "numRounds", "cosine0", "cosine1", "eloCosine0", "eloCosine1"])
 # averageOutCSV("csvs/fixedMatchesTests2400.csv", "csvs/fixedMatchesTests2400Averaged.csv", ["tournament", "numPlayers"], ["numMatches", "numRounds", "cosine0", "cosine1", "eloCosine0", "eloCosine1"])
