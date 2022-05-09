@@ -1,4 +1,5 @@
 import time
+import math
 import numpy as np 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -6,6 +7,9 @@ from ClassicTournaments import RoundRobin
 from MABTournaments import UCB, TS, EG
 from utils import *
 from typing import List, Dict
+
+folder = "img/report_images/convergence/"
+folder = "img/report_images/convergence/RR/"
 
 def makeFitnessHistoryPlot(xvalues : List[int], yvalues : List[float], lineLabels : List[str], title : str, filename : str, ylabel="Mean Strength Error", xlim=None, legendLoc="upper right", sizeInches=[17,10], extraticks=[]):
     fig, ax = plt.subplots()
@@ -43,68 +47,94 @@ def meanError(matrix1 : np.ndarray, matrix2 : np.ndarray, excludeDiagonal=True) 
                 count += 1
     return total/count
     
-numTests = 10
+numTests = 500
 
-errors = {}
-cosines = {}
-eloCosines = {}
-numMatches = {}
+strengthsCollection = [generateStrengths(16) for _ in range(numTests)]
 
-for i in range(numTests):
-    print("Starting")
-    start = time.time()
-    strengths = generateStrengths(16)
+def runTournaments(tournamentConstructors) -> List:
+    errors = {}
+    cosines = {}
+    eloCosines = {}
+    numMatches = {}
 
-    trueRanking = getTrueRanking(strengths)
+    for i in range(numTests):
+        print("Starting")
+        start = time.time()
+        strengths = strengthsCollection[i]
 
-    R = RoundRobin(strengths, 5, verbose=False)
-    U = UCB(strengths, verbose=False, explorationFolds=3, patience=4, maxLockInProportion=0.25)
-    T = TS(strengths, verbose=False, explorationFolds=3, patience=2, maxLockInProportion=0.25)
-    E = EG(strengths, verbose=False, explorationFolds=3, patience=4, maxLockInProportion=0.05, epsilon=0.1)
+        trueRanking = getTrueRanking(strengths)
 
-    for t in [R, U, T, E]:
-        if i == 0:
-            errors[t.toString()] = []
-            numMatches[t.toString()] = []
-            cosines[t.toString()] = []
-            eloCosines[t.toString()] = []
+        tournaments = [tc(strengths) for tc in tournamentConstructors]
 
-        meanErrs = []
-        cos = []
-        eloCos = []
-        while not t.isFinished:
-            t.runNextMatch()
-            err = meanError(strengths, t.winRatesLaplace)
+        for t in tournaments:
+            if i == 0:
+                errors[t.toString()] = []
+                numMatches[t.toString()] = []
+                cosines[t.toString()] = []
+                eloCosines[t.toString()] = []
 
-            # norm = np.linalg.norm(abs(strengths - t.winRatesLaplace))  # Don't use this as 'err' is probably more intuitive
-            # maxE = np.max(abs(strengths - t.winRatesLaplace))  # Don't use this as it'll go down (or up) in steps and not be as smooth as the other two
-            # print(strengths, t.winRatesLaplace)
-            # print(err, norm, maxE)
+            meanErrs = []
+            cos = []
+            eloCos = []
+            while not t.isFinished:
+                t.runNextMatch()
+                err = meanError(strengths, t.winRatesLaplace)
 
-            meanErrs.append(err)
-            # meanErrs.append(norm)
+                # norm = np.linalg.norm(abs(strengths - t.winRatesLaplace))  # Don't use this as 'err' is probably more intuitive
+                # maxE = np.max(abs(strengths - t.winRatesLaplace))  # Don't use this as it'll go down (or up) in steps and not be as smooth as the other two
+                # print(strengths, t.winRatesLaplace)
+                # print(err, norm, maxE)
 
-            ranking = t.getRanking()
-            eloRank, _ = t.getEloRanking()
+                meanErrs.append(err)
+                # meanErrs.append(norm)
 
-            # rankingSimNumSamples = min(120, getNumberOfPossibleDefiniteRankings(ranking))
-            # eloRankSimNumSamples = min(120, getNumberOfPossibleDefiniteRankings(eloRank))
+                ranking = t.getRanking()
+                eloRank, _ = t.getEloRanking()
 
-            rankingSimNumSamples = 5
-            # eloRankSimNumSamples = 5
+                # rankingSimNumSamples = min(120, getNumberOfPossibleDefiniteRankings(ranking))
+                # eloRankSimNumSamples = min(120, getNumberOfPossibleDefiniteRankings(eloRank))
 
-            cos.append(getRankingSimilarity(trueRanking, ranking, rankingSimNumSamples))
-            # eloCos.append(getRankingSimilarity(eloRank, ranking, eloRankSimNumSamples))
-        print(f"Finished {t.toString()}")
+                rankingSimNumSamples = 5
+                # eloRankSimNumSamples = 5
+
+                cos.append(getRankingSimilarity(trueRanking, ranking, rankingSimNumSamples))
+                # eloCos.append(getRankingSimilarity(eloRank, ranking, eloRankSimNumSamples))
+            print(f"Finished {t.toString()}")
 
 
-        errors[t.toString()].append(meanErrs)
-        cosines[t.toString()].append(cos)
-        eloCosines[t.toString()].append(eloCos)
-        numMatches[t.toString()].append(len(t.schedule))
+            errors[t.toString()].append(meanErrs)
+            cosines[t.toString()].append(cos)
+            eloCosines[t.toString()].append(eloCos)
+            numMatches[t.toString()].append(len(t.schedule))
 
-    print(f"Run {i+1}/{numTests} done in {time.time()-start:.4f}s.")
+        print(f"Run {i+1}/{numTests} done in {time.time()-start:.4f}s.")
+    
+    return errors, cosines, eloCosines, numMatches
 
+if folder[-3:] != "RR/":
+    input()
+    U = lambda strengths:UCB(strengths, verbose=False, explorationFolds=3, patience=4, maxLockInProportion=0.25)
+    T = lambda strengths:TS(strengths, verbose=False, explorationFolds=3, patience=2, maxLockInProportion=0.25)
+    E = lambda strengths:EG(strengths, verbose=False, explorationFolds=3, patience=4, maxLockInProportion=0.05, epsilon=0.1)
+    R = lambda strengths: RoundRobin(strengths, 3, verbose=False)
+
+    errors, cosines, eloCosines, numMatches = runTournaments([U,T,E,R])
+
+    maximinX = max([min(numMatches[t]) for t in numMatches])+1
+
+    R2 = lambda strengths: RoundRobin(strengths, math.ceil(maximinX/120), verbose=False)
+    errors2, cosines2, eloCosines2, numMatches2 = runTournaments([R2])
+
+    errors.update(errors2)
+    cosines.update(cosines2)
+    eloCosines.update(eloCosines2)
+    numMatches.update(numMatches2)
+
+    legend = ['UCB', "TS", "EG", "RR3", f"RR{math.ceil(maximinX/120)}"]
+else:
+    errors, cosines, eloCosines, numMatches = runTournaments([lambda strengths: RoundRobin(strengths, 200, verbose=False)])
+    maximinX = max([min(numMatches[t]) for t in numMatches])+1
+    legend = ["RR200"]
 
 
 averagedErrs = []
@@ -145,7 +175,6 @@ for t in errors:
 
 xVals = np.arange(max([max(numMatches[t]) for t in numMatches])+1)
 
-# maxX = len(xVals)
 
 # newValues = []
 # for i, tournamentValues in enumerate(averagedErrs):
@@ -157,14 +186,14 @@ xVals = np.arange(max([max(numMatches[t]) for t in numMatches])+1)
 # df.to_csv(f"csvs/probConvergenceTests{numTests}.csv", header=True)
 
 
-makeFitnessHistoryPlot(xVals, averagedErrs, ["RR200", 'UCB', "TS", "EG", "RR3"], "Mean Strength Estimation Error Over Time", "img/report_images/convergence/meanErrorWhole.png", xlim=[0, 650])
-makeFitnessHistoryPlot(xVals, averagedErrs, ["RR200", 'UCB', "TS", "EG", "RR3"], "Mean Strength Estimation Error Over Time", "img/report_images/convergence/meanErrorStart.png", xlim=[0, 500])
-makeFitnessHistoryPlot(xVals, averagedErrs, ["RR200", 'UCB', "TS", "EG", "RR3"], "Mean Strength Estimation Error Over Time", "img/report_images/convergence/meanErrorEnd.png", xlim=[400, 650])#, extraticks=[500])
+makeFitnessHistoryPlot(xVals, averagedErrs, legend, "Mean Strength Estimation Error Over Time", f"{folder}meanErrorWhole.png", xlim=[0, maximinX+50])
+makeFitnessHistoryPlot(xVals, averagedErrs, legend, "Mean Strength Estimation Error Over Time", f"{folder}meanErrorStart.png", xlim=[0, 500])
+makeFitnessHistoryPlot(xVals, averagedErrs, legend, "Mean Strength Estimation Error Over Time", f"{folder}meanErrorEnd.png", xlim=[400, maximinX+50])#, extraticks=[500])
 
 
-makeFitnessHistoryPlot(xVals, averagedCosines, ["RR200", 'UCB', "TS", "EG", "RR3"], "Cosine Similarity Of The Predicted Ranking Over Time", "img/report_images/convergence/meanCosineWhole.png", ylabel="Cosine Similarity", xlim=[0, 650], legendLoc="lower right")
-makeFitnessHistoryPlot(xVals, averagedCosines, ["RR200", 'UCB', "TS", "EG", "RR3"], "Cosine Similarity Of The Predicted Ranking Over Time", "img/report_images/convergence/meanCosineStart.png", ylabel="Cosine Similarity", xlim=[0, 500], legendLoc="lower right")
-makeFitnessHistoryPlot(xVals, averagedCosines, ["RR200", 'UCB', "TS", "EG", "RR3"], "Cosine Similarity Of The Predicted Ranking Over Time", "img/report_images/convergence/meanCosineEnd.png", ylabel="Cosine Similarity", xlim=[400, 650], legendLoc="lower right")#, extraticks=[500])
+makeFitnessHistoryPlot(xVals, averagedCosines, legend, "Cosine Similarity Of The Predicted Ranking Over Time", f"{folder}meanCosineWhole.png", ylabel="Cosine Similarity", xlim=[0, maximinX+50], legendLoc="lower right")
+makeFitnessHistoryPlot(xVals, averagedCosines, legend, "Cosine Similarity Of The Predicted Ranking Over Time", f"{folder}meanCosineStart.png", ylabel="Cosine Similarity", xlim=[0, 500], legendLoc="lower right")
+makeFitnessHistoryPlot(xVals, averagedCosines, legend, "Cosine Similarity Of The Predicted Ranking Over Time", f"{folder}meanCosineEnd.png", ylabel="Cosine Similarity", xlim=[400, maximinX+50], legendLoc="lower right")#, extraticks=[500])
 
 
 # makeFitnessHistoryPlot(xVals, averagedEloCosines, ["RR200", 'UCB', "TS", "EG", "RR3"], "Cosine Similarity Of The Elo Ranking Over Time", "img/report_images/convergence/meanEloCosineWhole.png", ylabel="Cosine Similarity")

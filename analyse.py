@@ -39,9 +39,9 @@ def makeBarChart(xticks : List[str], yvalues : List[List], ylabels : List[str], 
         for i in range(numBarsPerX):
             ax.errorbar(x+(2*i+1-numBarsPerX)*width/2, yvalues[i], yerr = yErrors[i],fmt='o',ecolor = 'red',color='yellow')
 
-    ax.set_title(title)
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
+    ax.set_title(title, fontsize=18)
+    ax.set_xlabel(xlabel, fontsize=16)
+    ax.set_ylabel(ylabel, fontsize=16)
     ax.set_xticks(x)
     ax.set_xticklabels(xticks)
     legend = ax.legend(loc=legendLoc)
@@ -149,12 +149,12 @@ def getCorrectPlacesDFFromCSV(csv : str, numPlayers, header="correctPositions") 
 def plotCorrectPlacesFromCSV(csv : str, numPlayers : int, std=True, header="correctPositions", title="", filename="", yRange=None, xlabel="", ylabel="", sizeInches=[17,10]):
     df = getCorrectPlacesDFFromCSV(csv, numPlayers, header)
     stdColumn = "positionAccuracySTD" if std else None
-    plotFromDF(df, "positionAccuracy", "tournament", "positionNumber", stdColumn, None, title, filename, [0,1], "Tournament", "Proportion Of Time With Correctly Ranked ith-best Player", [17,10], "Position")
+    plotFromDF(df, "positionAccuracy", "tournament", "positionNumber", stdColumn, None, title, filename, [0,1], "Tournament", "Proportion Of Tests With Correctly Ranked ith-best Player", [17,10], "Position")
 
 def plotCorrectPlacesFromDF(df : pd.DataFrame, numPlayers : int, std=True, header="correctPositions", title="", filename="", yRange=None, xlabel="", ylabel="", sizeInches=[17,10]):
     df = getCorrectPlacesDF(df, numPlayers, header)
     stdColumn = "positionAccuracySTD" if std else None
-    plotFromDF(df, "positionAccuracy", "tournament", "positionNumber", stdColumn, None, title, filename, [0,1], "Tournament", "Proportion Of Time With Correctly Ranked ith-best Player", [17,10], "Position")
+    plotFromDF(df, "positionAccuracy", "tournament", "positionNumber", stdColumn, None, title, filename, [0,1], "Tournament", "Proportion Of Tests With Correctly Ranked ith-best Player", [17,10], "Position")
 
 
 def plotAllCorrectPlaces(csv : str, numPlayers, tournamentName : str, std=True, header="correctPositions", title="", filename="", yRange=None, xlabel="", ylabel="", sizeInches=[17,10]):
@@ -199,9 +199,9 @@ def plotAllCorrectPlaces(csv : str, numPlayers, tournamentName : str, std=True, 
         ax.errorbar(positionNumbers, correctPlacesProps, yerr = correctPlacesPropsSTD,fmt='o',ecolor = 'red',color='yellow')
 
 
-    ax.set_title(title)
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
+    ax.set_title(title, fontsize=18)
+    ax.set_xlabel(xlabel, fontsize=16)
+    ax.set_ylabel(ylabel, fontsize=16)
     if yRange is not None:
         ax.set_ylim(yRange)
 
@@ -217,7 +217,8 @@ def plotAllCorrectPlaces(csv : str, numPlayers, tournamentName : str, std=True, 
 # d = getCorrectPlacesDF("csvs/MABMainTestsAveraged.csv", 8)
 # plotFromDF(d, "positionAccuracy", "tournament", "positionNumber", None, None, "ooh2", "ahh2.png", None, "Tournament", "Proportion Correct Similarity", [17,10])
 # plotCorrectPlacesFromCSV("csvs/MABMainTestsAveraged.csv", 8, True, title="ooh2", filename="ahh2.png")
-# plotAllCorrectPlaces("csvs/classicalAndSortingTestsAveraged.csv", 16, "RR100", True, title="ooh3", filename="ahh3.png", xlabel="Position", ylabel="Proportion Of Time With Correctly Ranked ith-best Player")
+plotAllCorrectPlaces("csvs/classicalAndSortingTestsAveraged.csv", 16, "RR1", False, title="Proportion Of With Correctly Ranked ith-best Player", filename="img/report_images/RR1Props.png", xlabel="Position", ylabel="Proportion")
+plotAllCorrectPlaces("csvs/classicalAndSortingTestsAveraged.csv", 16, "RR1", True, title="Proportion Of With Correctly Ranked ith-best Player", filename="img/report_images/RR1PropsSTD.png", xlabel="Position", ylabel="Proportion")
 
 def filterDF(df : pd.DataFrame, column : str, validValues : List) -> pd.DataFrame:
     dfs = []
@@ -271,12 +272,12 @@ for numPlayers in sortingDF["numPlayers"].unique():
     plotCorrectPlacesFromDF(sortingDF, numPlayers, True, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"img/report_images/sorting/correctPlaces{numPlayers}wErr.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
 
 
-classicalDF = filterDF(classicalAndSortingDF, "tournament", [f"RR{x}" for x in [1]] + ["SE", "SE3pp", "DE", "SW"])
-classicalDF = filterDF(classicalDF, "numPlayers", [4,8,16])
-makeAccuracyPlots(classicalDF, "numPlayers", "img/report_images/classical/clearer/", False, "Number of Players", legLocs=["upper right", "upper left", "upper center", "upper right"])
-for numPlayers in classicalDF["numPlayers"].unique():
-    plotCorrectPlacesFromDF(classicalDF, numPlayers, False, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"img/report_images/classical/clearer/correctPlaces{numPlayers}.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
-    plotCorrectPlacesFromDF(classicalDF, numPlayers, True, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"img/report_images/classical/clearer/correctPlaces{numPlayers}wErr.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
+classicalDFClearer = filterDF(classicalAndSortingDF, "tournament", [f"RR{x}" for x in [1]] + ["SE", "SE3pp", "DE", "SW"])
+classicalDFClearer = filterDF(classicalDFClearer, "numPlayers", [4,8,16])
+makeAccuracyPlots(classicalDFClearer, "numPlayers", "img/report_images/classical/clearer/", False, "Number of Players", legLocs=["upper right", "upper left", "upper center", "upper right"])
+for numPlayers in classicalDFClearer["numPlayers"].unique():
+    plotCorrectPlacesFromDF(classicalDFClearer, numPlayers, False, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"img/report_images/classical/clearer/correctPlaces{numPlayers}.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
+    plotCorrectPlacesFromDF(classicalDFClearer, numPlayers, True, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"img/report_images/classical/clearer/correctPlaces{numPlayers}wErr.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
 
 
 
