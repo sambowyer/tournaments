@@ -16,7 +16,7 @@ import time
 headers = ["tournament", "numPlayers", "strongTransitivity", "numMatches", "numRounds", "bestOf",
            "cosine0", "cosine1", "eloCosine0", "eloCosine1", "correctPositions", "eloCorrectPositions"]
 
-outputCSV = "csvs/fixedMatchesTests2400.csv"
+outputCSV = "csvs/fixedMatchesTests120.csv"
 
 # writeHeaders(outputCSV, headers)
 
@@ -68,9 +68,9 @@ def runTournamentForStats(strengths, tournamentConstructor, constructorArgs : Li
     return stats
 
 numPlayers = [16]
-numTests = 498
+numTests = 500
 
-numTotalMatches = 2400
+numTotalMatches = 120
 
 for i in range(numTests):
     start = time.time()
@@ -82,7 +82,7 @@ for i in range(numTests):
         strengths = generateStrengths(n)
 
         # Round Robin Tests
-        for numFolds in [1,5]:#,25,100]:
+        for numFolds in [1]:#,25,100]:
             statsCollection.append(runTournamentForStats(strengths, RoundRobin, [strengths, numFolds, lambda x: 1/(1+10**(x/400)), 1, False], numTotalMatches))
 
         # Single Elimination
