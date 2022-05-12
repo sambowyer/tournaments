@@ -8,8 +8,8 @@ from MABTournaments import UCB, TS, EG
 from utils import *
 from typing import List, Dict
 
-folder = "img/report_images/convergence/"
-folder = "img/report_images/convergence/RR/"
+folder = "img/report_images/convergence/8/"
+# folder = "img/report_images/convergence/RR/"
 
 def makeFitnessHistoryPlot(xvalues : List[int], yvalues : List[float], lineLabels : List[str], title : str, filename : str, ylabel="Mean Strength Error", xlim=None, legendLoc="upper right", sizeInches=[17,10], extraticks=[]):
     fig, ax = plt.subplots()
@@ -20,10 +20,12 @@ def makeFitnessHistoryPlot(xvalues : List[int], yvalues : List[float], lineLabel
         # print(i)
         ax.plot(xvalues, tournamentValues + [np.nan for j in range(maxX-len(tournamentValues))], label=lineLabels[i])
 
-    ax.set_title(title)
-    ax.set_xlabel("Match Number")
-    ax.set_ylabel(ylabel)
-    plt.legend(loc=legendLoc)
+    ax.set_title(title, fontsize=20)
+    ax.set_xlabel("Match Number", fontsize=18)
+    ax.set_ylabel(ylabel, fontsize=18)
+    ax.tick_params(axis='both', labelsize=14)
+
+    plt.legend(loc=legendLoc, fontsize=14, title_fontsize=14)
 
     if xlim is not None:
         plt.xlim(xlim[0], xlim[1])
@@ -49,9 +51,9 @@ def meanError(matrix1 : np.ndarray, matrix2 : np.ndarray, excludeDiagonal=True) 
     
 numTests = 500
 
-strengthsCollection = [generateStrengths(16) for _ in range(numTests)]
+strengthsCollection = [generateStrengths(8) for _ in range(numTests)]
 
-def runTournaments(tournamentConstructors) -> List:
+def runTournaments(tournamentConstructors, WRL=True) -> List:
     errors = {}
     cosines = {}
     eloCosines = {}
@@ -78,7 +80,10 @@ def runTournaments(tournamentConstructors) -> List:
             eloCos = []
             while not t.isFinished:
                 t.runNextMatch()
-                err = meanError(strengths, t.winRatesLaplace)
+                if WRL:
+                    err = meanError(strengths, t.winRatesLaplace)
+                else:
+                    err = meanError(strengths, t.winRates)
 
                 # norm = np.linalg.norm(abs(strengths - t.winRatesLaplace))  # Don't use this as 'err' is probably more intuitive
                 # maxE = np.max(abs(strengths - t.winRatesLaplace))  # Don't use this as it'll go down (or up) in steps and not be as smooth as the other two
@@ -91,14 +96,14 @@ def runTournaments(tournamentConstructors) -> List:
                 ranking = t.getRanking()
                 eloRank, _ = t.getEloRanking()
 
-                # rankingSimNumSamples = min(120, getNumberOfPossibleDefiniteRankings(ranking))
-                # eloRankSimNumSamples = min(120, getNumberOfPossibleDefiniteRankings(eloRank))
+                rankingSimNumSamples = min(120, getNumberOfPossibleDefiniteRankings(ranking))
+                eloRankSimNumSamples = min(120, getNumberOfPossibleDefiniteRankings(eloRank))
 
-                rankingSimNumSamples = 5
+                # rankingSimNumSamples = 5
                 # eloRankSimNumSamples = 5
 
                 cos.append(getRankingSimilarity(trueRanking, ranking, rankingSimNumSamples))
-                # eloCos.append(getRankingSimilarity(eloRank, ranking, eloRankSimNumSamples))
+                eloCos.append(getRankingSimilarity(trueRanking, eloRank, eloRankSimNumSamples))
             print(f"Finished {t.toString()}")
 
 
@@ -112,7 +117,6 @@ def runTournaments(tournamentConstructors) -> List:
     return errors, cosines, eloCosines, numMatches
 
 if folder[-3:] != "RR/":
-    input()
     U = lambda strengths:UCB(strengths, verbose=False, explorationFolds=3, patience=4, maxLockInProportion=0.25)
     T = lambda strengths:TS(strengths, verbose=False, explorationFolds=3, patience=2, maxLockInProportion=0.25)
     E = lambda strengths:EG(strengths, verbose=False, explorationFolds=3, patience=4, maxLockInProportion=0.05, epsilon=0.1)
@@ -121,6 +125,7 @@ if folder[-3:] != "RR/":
     errors, cosines, eloCosines, numMatches = runTournaments([U,T,E,R])
 
     maximinX = max([min(numMatches[t]) for t in numMatches])+1
+    middleX  = max([min(numMatches[t]) for t in ["UCB", "EG0.1", "RR3"]])
 
     R2 = lambda strengths: RoundRobin(strengths, math.ceil(maximinX/120), verbose=False)
     errors2, cosines2, eloCosines2, numMatches2 = runTournaments([R2])
@@ -132,8 +137,9 @@ if folder[-3:] != "RR/":
 
     legend = ['UCB', "TS", "EG", "RR3", f"RR{math.ceil(maximinX/120)}"]
 else:
-    errors, cosines, eloCosines, numMatches = runTournaments([lambda strengths: RoundRobin(strengths, 200, verbose=False)])
+    errors, cosines, eloCosines, numMatches = runTournaments([lambda strengths: RoundRobin(strengths, 200, verbose=False)], False)
     maximinX = max([min(numMatches[t]) for t in numMatches])+1
+    middleX  = 500
     legend = ["RR200"]
 
 
@@ -186,17 +192,17 @@ xVals = np.arange(max([max(numMatches[t]) for t in numMatches])+1)
 # df.to_csv(f"csvs/probConvergenceTests{numTests}.csv", header=True)
 
 
-makeFitnessHistoryPlot(xVals, averagedErrs, legend, "Mean Strength Estimation Error Over Time", f"{folder}meanErrorWhole.png", xlim=[0, maximinX+50])
-makeFitnessHistoryPlot(xVals, averagedErrs, legend, "Mean Strength Estimation Error Over Time", f"{folder}meanErrorStart.png", xlim=[0, 500])
-makeFitnessHistoryPlot(xVals, averagedErrs, legend, "Mean Strength Estimation Error Over Time", f"{folder}meanErrorEnd.png", xlim=[400, maximinX+50])#, extraticks=[500])
+makeFitnessHistoryPlot(xVals, averagedErrs, legend, "Mean Strength Estimation Error Over Time", f"{folder}meanErrorWhole.png", xlim=[0, maximinX+25])
+makeFitnessHistoryPlot(xVals, averagedErrs, legend, "Mean Strength Estimation Error Over Time", f"{folder}meanErrorStart.png", xlim=[0, middleX])
+makeFitnessHistoryPlot(xVals, averagedErrs, legend, "Mean Strength Estimation Error Over Time", f"{folder}meanErrorEnd.png", xlim=[middleX-100, maximinX+25])#, extraticks=[500])
 
 
-makeFitnessHistoryPlot(xVals, averagedCosines, legend, "Cosine Similarity Of The Predicted Ranking Over Time", f"{folder}meanCosineWhole.png", ylabel="Cosine Similarity", xlim=[0, maximinX+50], legendLoc="lower right")
-makeFitnessHistoryPlot(xVals, averagedCosines, legend, "Cosine Similarity Of The Predicted Ranking Over Time", f"{folder}meanCosineStart.png", ylabel="Cosine Similarity", xlim=[0, 500], legendLoc="lower right")
-makeFitnessHistoryPlot(xVals, averagedCosines, legend, "Cosine Similarity Of The Predicted Ranking Over Time", f"{folder}meanCosineEnd.png", ylabel="Cosine Similarity", xlim=[400, maximinX+50], legendLoc="lower right")#, extraticks=[500])
+makeFitnessHistoryPlot(xVals, averagedCosines, legend, "Cosine Similarity Of The Predicted Ranking Over Time", f"{folder}meanCosineWhole.png", ylabel="Cosine Similarity", xlim=[0, maximinX+25], legendLoc="lower right")
+makeFitnessHistoryPlot(xVals, averagedCosines, legend, "Cosine Similarity Of The Predicted Ranking Over Time", f"{folder}meanCosineStart.png", ylabel="Cosine Similarity", xlim=[0, middleX], legendLoc="lower right")
+makeFitnessHistoryPlot(xVals, averagedCosines, legend, "Cosine Similarity Of The Predicted Ranking Over Time", f"{folder}meanCosineEnd.png", ylabel="Cosine Similarity", xlim=[middleX-100, maximinX+25], legendLoc="lower right")#, extraticks=[500])
 
 
-# makeFitnessHistoryPlot(xVals, averagedEloCosines, ["RR200", 'UCB', "TS", "EG", "RR3"], "Cosine Similarity Of The Elo Ranking Over Time", "img/report_images/convergence/meanEloCosineWhole.png", ylabel="Cosine Similarity")
-# makeFitnessHistoryPlot(xVals, averagedEloCosines, ["RR200", 'UCB', "TS", "EG", "RR3"], "Cosine Similarity Of The Elo Ranking Over Time", "img/report_images/convergence/meanEloCosineStart.png", ylabel="Cosine Similarity", xlim=[0,400])
-# makeFitnessHistoryPlot(xVals, averagedEloCosines, ["RR200", 'UCB', "TS", "EG", "RR3"], "Cosine Similarity Of The Elo Ranking Over Time", "img/report_images/convergence/meanEloCosineEnd.png", ylabel="Cosine Similarity", xlim=[400, 25000])
+makeFitnessHistoryPlot(xVals, averagedEloCosines, legend, "Cosine Similarity Of The Elo Ranking Over Time", f"{folder}meanEloCosineWhole.png", ylabel="Cosine Similarity", xlim=[0, maximinX+25])
+makeFitnessHistoryPlot(xVals, averagedEloCosines, legend, "Cosine Similarity Of The Elo Ranking Over Time", f"{folder}meanEloCosineStart.png", ylabel="Cosine Similarity", xlim=[0, middleX])
+makeFitnessHistoryPlot(xVals, averagedEloCosines, legend, "Cosine Similarity Of The Elo Ranking Over Time", f"{folder}meanEloCosineEnd.png", ylabel="Cosine Similarity", xlim=[middleX-100, maximinX+25])
 

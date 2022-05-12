@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from typing import List, Dict 
 
+gridLines = True
+
 def getOptimalMABParams():
     df = pd.read_csv("csvs/MABTuningTestsAveraged.csv")
 
@@ -39,12 +41,17 @@ def makeBarChart(xticks : List[str], yvalues : List[List], ylabels : List[str], 
         for i in range(numBarsPerX):
             ax.errorbar(x+(2*i+1-numBarsPerX)*width/2, yvalues[i], yerr = yErrors[i],fmt='o',ecolor = 'red',color='yellow')
 
-    ax.set_title(title, fontsize=18)
-    ax.set_xlabel(xlabel, fontsize=16)
-    ax.set_ylabel(ylabel, fontsize=16)
+    ax.set_title(title, fontsize=20)
+    ax.set_xlabel(xlabel, fontsize=18)
+    ax.set_ylabel(ylabel, fontsize=18)
+    # ax.yticks(fontsize=16)
     ax.set_xticks(x)
-    ax.set_xticklabels(xticks)
-    legend = ax.legend(loc=legendLoc)
+    ax.set_xticklabels(xticks)#, fontsize=14)
+    # ax.set_xticklabels(x, labelsize=14)
+    # ax.tick_params(axis='y', labelsize=14)
+    ax.tick_params(axis='both', labelsize=14)
+
+    legend = ax.legend(loc=legendLoc, fontsize=14, title_fontsize=14)
     if legendTitle is not None:
         legend.set_title(legendTitle)
 
@@ -67,10 +74,13 @@ def makeBarChart(xticks : List[str], yvalues : List[List], ylabels : List[str], 
                         xy=(rect.get_x() + rect.get_width() / labelPosition, height),
                         xytext=(0, 3),  # 3 points vertical offset
                         textcoords="offset points",
-                        ha='center', va='bottom', rotation=90)
+                        ha='center', va='bottom', rotation=90, size=14)
 
-    for r in rects:
-        autolabel(r, 2 if yErrors is None else 3.3)
+    if gridLines:
+        plt.grid(axis = 'y')
+    else:
+        for r in rects:
+            autolabel(r, 2 if yErrors is None else 3.3)
 
     # fig.tight_layout()
 
@@ -199,9 +209,12 @@ def plotAllCorrectPlaces(csv : str, numPlayers, tournamentName : str, std=True, 
         ax.errorbar(positionNumbers, correctPlacesProps, yerr = correctPlacesPropsSTD,fmt='o',ecolor = 'red',color='yellow')
 
 
-    ax.set_title(title, fontsize=18)
-    ax.set_xlabel(xlabel, fontsize=16)
-    ax.set_ylabel(ylabel, fontsize=16)
+    ax.set_title(title, fontsize=20)
+    ax.set_xlabel(xlabel, fontsize=18)
+    ax.set_ylabel(ylabel, fontsize=18)
+    # ax.yticks(fontsize=16)
+    # ax.xticks(fontsize=16)
+    # ax.tick_params(axis='x', labelsize=14)
     if yRange is not None:
         ax.set_ylim(yRange)
 
@@ -246,149 +259,164 @@ def makeAccuracyPlots(df : pd.DataFrame, xColumn2 : str, filenamePrefix : str, m
     plotFromDF(df, "numRounds", xColumn, xColumn2, None, None, title=f"{mean}Number of Rounds In Tournament", filename=filenamePrefix+"rounds.png", yRange=None, xlabel="Tournament", ylabel="Number Of Rounds", legendTitle=legendTitle, legendLoc=legLocs[3], yLimScaleFactors=[0.9, 1.125])
 
 
-# First the basic performance tests from both classical and sorting tournaments
-classicalAndSortingDF = pd.read_csv("csvs/classicalAndSortingTestsAveraged.csv")
+# Now actually create the images (once with gridlines and once with annotations instead)
 
-classicalNames = [f"RR{x}" for x in [1,2,3,5,10,25,50,100]] + ["SE", "SE3pp", "DE", "SW"]
-sortingAlgos   = ["IS", "BIS", "BS", "SS", "QS", "MS", "HS"]
-bestOf1SortingNames = [algo+"1" for algo in sortingAlgos]
-sortingNames = bestOf1SortingNames.copy()
-for bestOf in [1,3,5,7,9,51,101]:
-    sortingNames += [algo+str(bestOf) for algo in sortingAlgos]
+for rootFolder in ["img/report_images/", "img/report_images/detailed/"]:
+    # First the basic performance tests from both classical and sorting tournaments
+    classicalAndSortingDF = pd.read_csv("csvs/classicalAndSortingTestsAveraged.csv")
 
-classicalDF = filterDF(classicalAndSortingDF, "tournament", classicalNames)
-sortingDF   = filterDF(classicalAndSortingDF, "tournament", bestOf1SortingNames)
-sortingDF["tournament"] = [name[:2] if name[:3] != "BIS" else "BIS" for name in sortingDF["tournament"].values]
+    classicalNames = [f"RR{x}" for x in [1,2,3,5,10,25,50,100]] + ["SE", "SE3pp", "DE", "SW"]
+    sortingAlgos   = ["IS", "BIS", "BS", "SS", "QS", "MS", "HS"]
+    bestOf1SortingNames = [algo+"1" for algo in sortingAlgos]
+    sortingNames = bestOf1SortingNames.copy()
+    for bestOf in [1,3,5,7,9,51,101]:
+        sortingNames += [algo+str(bestOf) for algo in sortingAlgos]
 
-makeAccuracyPlots(classicalDF, "numPlayers", "img/report_images/classical/", False, "Number of Players", legLocs=["upper right", "upper left", "upper center", "upper right"])
-makeAccuracyPlots(sortingDF, "numPlayers", "img/report_images/sorting/", True, "Number of Players", legLocs=["lower right", "upper right", "upper right", "upper right"])
+    classicalDF = filterDF(classicalAndSortingDF, "tournament", classicalNames)
+    sortingDF   = filterDF(classicalAndSortingDF, "tournament", bestOf1SortingNames)
+    sortingDF["tournament"] = [name[:2] if name[:3] != "BIS" else "BIS" for name in sortingDF["tournament"].values]
 
-for numPlayers in classicalDF["numPlayers"].unique():
-    plotCorrectPlacesFromDF(classicalDF, numPlayers, False, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"img/report_images/classical/correctPlaces{numPlayers}.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
-    plotCorrectPlacesFromDF(classicalDF, numPlayers, True, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"img/report_images/classical/correctPlaces{numPlayers}wErr.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
+    makeAccuracyPlots(classicalDF, "numPlayers", f"{rootFolder}classical/", False, "Number of Players", legLocs=["upper right", "upper left", "upper center", "upper right"])
+    makeAccuracyPlots(sortingDF, "numPlayers", f"{rootFolder}sorting/", True, "Number of Players", legLocs=["lower right", "upper right", "upper right", "upper right"])
 
-for numPlayers in sortingDF["numPlayers"].unique():
-    plotCorrectPlacesFromDF(sortingDF, numPlayers, False, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"img/report_images/sorting/correctPlaces{numPlayers}.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
-    plotCorrectPlacesFromDF(sortingDF, numPlayers, True, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"img/report_images/sorting/correctPlaces{numPlayers}wErr.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
+    for numPlayers in classicalDF["numPlayers"].unique():
+        plotCorrectPlacesFromDF(classicalDF, numPlayers, False, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"{rootFolder}classical/correctPlaces{numPlayers}.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
+        plotCorrectPlacesFromDF(classicalDF, numPlayers, True, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"{rootFolder}classical/correctPlaces{numPlayers}wErr.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
 
-
-classicalDFClearer = filterDF(classicalAndSortingDF, "tournament", [f"RR{x}" for x in [1]] + ["SE", "SE3pp", "DE", "SW"])
-classicalDFClearer = filterDF(classicalDFClearer, "numPlayers", [4,8,16])
-makeAccuracyPlots(classicalDFClearer, "numPlayers", "img/report_images/classical/clearer/", False, "Number of Players", legLocs=["upper right", "upper left", "upper center", "upper right"])
-for numPlayers in classicalDFClearer["numPlayers"].unique():
-    plotCorrectPlacesFromDF(classicalDFClearer, numPlayers, False, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"img/report_images/classical/clearer/correctPlaces{numPlayers}.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
-    plotCorrectPlacesFromDF(classicalDFClearer, numPlayers, True, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"img/report_images/classical/clearer/correctPlaces{numPlayers}wErr.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
+    for numPlayers in sortingDF["numPlayers"].unique():
+        plotCorrectPlacesFromDF(sortingDF, numPlayers, False, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"{rootFolder}sorting/correctPlaces{numPlayers}.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
+        plotCorrectPlacesFromDF(sortingDF, numPlayers, True, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"{rootFolder}sorting/correctPlaces{numPlayers}wErr.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
 
 
-
-renamedSortingDF = filterDF(classicalAndSortingDF, "tournament", sortingNames)
-oldsortingNames = renamedSortingDF["tournament"].values
-newSortingNames = [name[:2] if name[:3] != "BIS" else "BIS" for name in oldsortingNames]
-renamedSortingDF["tournament"] = newSortingNames
-
-makeAccuracyPlots(renamedSortingDF, "bestOf", "img/report_images/sortingBestOf/", True, "Best-of Number", legLocs=["upper left", "upper right", "upper right", "upper left"])
-
-# plotCorrectPlacesFromCSV("classicalAndSorting")
-
-# Now the performance tests from and (optimised) MAB tournaments
-MABMainDF = pd.read_csv("csvs/MABMainTestsAveraged.csv")
-makeAccuracyPlots(MABMainDF, "numPlayers", "img/report_images/MAB/", True, "Number of Players", legLocs=["upper right", "upper right", "upper center", "upper right"])
-
-for numPlayers in MABMainDF["numPlayers"].unique():
-    plotCorrectPlacesFromDF(MABMainDF, numPlayers, False, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"img/report_images/MAB/correctPlaces{numPlayers}.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
-    plotCorrectPlacesFromDF(MABMainDF, numPlayers, True, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"img/report_images/MAB/correctPlaces{numPlayers}wErr.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
-
-# And do the same to make graphs that compare RR vs MAB
-RRDF = filterDF(classicalDF, "tournament", ["RR1", "RR5", "RR25", "RR100"])
-MABDF = MABMainDF
-for col in MABDF.columns:
-    if col not in RRDF.columns:
-        MABDF.drop(columns=[col], inplace=True)
-for col in RRDF.columns:
-    if col not in MABDF.columns:
-        RRDF.drop(columns=[col], inplace=True)
-RRvsMABDF = pd.concat([RRDF, MABDF])
-makeAccuracyPlots(RRvsMABDF, "numPlayers", "img/report_images/RRvsMAB/", True, "Number of Players", legLocs=["upper left", "upper right", "upper center", "upper left"])
-
-for numPlayers in RRvsMABDF["numPlayers"].unique():
-    plotCorrectPlacesFromDF(RRvsMABDF, numPlayers, False, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"img/report_images/RRvsMAB/correctPlaces{numPlayers}.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
-    plotCorrectPlacesFromDF(RRvsMABDF, numPlayers, True, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"img/report_images/RRvsMAB/correctPlaces{numPlayers}wErr.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
+    classicalDFClearer = filterDF(classicalAndSortingDF, "tournament", [f"RR{x}" for x in [1]] + ["SE", "SE3pp", "DE", "SW"])
+    classicalDFClearer = filterDF(classicalDFClearer, "numPlayers", [4,8,16])
+    makeAccuracyPlots(classicalDFClearer, "numPlayers", f"{rootFolder}classical/clearer/", False, "Number of Players", legLocs=["upper right", "upper left", "upper center", "upper right"])
+    for numPlayers in classicalDFClearer["numPlayers"].unique():
+        plotCorrectPlacesFromDF(classicalDFClearer, numPlayers, False, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"{rootFolder}classical/clearer/correctPlaces{numPlayers}.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
+        plotCorrectPlacesFromDF(classicalDFClearer, numPlayers, True, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"{rootFolder}classical/clearer/correctPlaces{numPlayers}wErr.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
 
 
-# Now do the same for the transitivity test
-transitivityDF = pd.read_csv("csvs/transitivityTestsAveraged.csv")
-makeAccuracyPlots(transitivityDF, "strongTransitivity", "img/report_images/transitivity/", True, "Strong Transitivity?", legLocs=["lower left", "upper right", "upper right", "upper left"])
-for numPlayers in transitivityDF["numPlayers"].unique():
-    plotCorrectPlacesFromDF(transitivityDF, numPlayers, False, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"img/report_images/transitivity/correctPlaces{numPlayers}.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
-    plotCorrectPlacesFromDF(transitivityDF, numPlayers, True, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"img/report_images/transitivity/correctPlaces{numPlayers}wErr.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
 
-# And the fixed number of matches test
-fixedMatchNum120DF = pd.read_csv("csvs/fixedMatchesTests120Averaged.csv")
-fixedMatchNum2400DF = pd.read_csv("csvs/fixedMatchesTests2400Averaged.csv")
-fixedMatchNum12000DF = pd.read_csv("csvs/fixedMatchesTests12000Averaged.csv")
-fixedMatchNum120DF["fixedMatchNum"] = 120
-fixedMatchNum2400DF["fixedMatchNum"] = 2400
-fixedMatchNum12000DF["fixedMatchNum"] = 12000
-fixedMatchNumDF = pd.concat([fixedMatchNum120DF, fixedMatchNum2400DF, fixedMatchNum12000DF])
-makeAccuracyPlots(fixedMatchNumDF, "fixedMatchNum", "img/report_images/fixedMatchNum/", False, "Number of Matches", legLocs=["upper right", "upper left", "upper center", "lower right"])
+    renamedSortingDF = filterDF(classicalAndSortingDF, "tournament", sortingNames)
+    oldsortingNames = renamedSortingDF["tournament"].values
+    newSortingNames = [name[:2] if name[:3] != "BIS" else "BIS" for name in oldsortingNames]
+    renamedSortingDF["tournament"] = newSortingNames
 
-for num, DF in [[120, fixedMatchNum120DF], [2400, fixedMatchNum2400DF], [12000, fixedMatchNum12000DF]]:
-    for numPlayers in DF["numPlayers"].unique():
-        plotCorrectPlacesFromDF(DF, numPlayers, False, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"img/report_images/fixedMatchNum/correctPlaces{numPlayers}_{num}.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
-        plotCorrectPlacesFromDF(DF, numPlayers, True, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"img/report_images/fixedMatchNum/correctPlaces{numPlayers}wErr_{num}.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
+    makeAccuracyPlots(renamedSortingDF, "bestOf", f"{rootFolder}sortingBestOf/", True, "Best-of Number", legLocs=["upper left", "upper right", "upper right", "upper left"])
 
-# MAB Tuning Tests
-for param, neatParam in [["explorationFolds", "Number of Exploration Folds"], ["patience", "Patience"], ["maxLockInProportion", "Maximum Lock-In Proportion"]]:
-    MABTuningDF = pd.read_csv(f"csvs/MABTuningTestsAveraged2_{param}.csv")
+    # plotCorrectPlacesFromCSV("classicalAndSorting")
 
-    for numPlayers in [8, 32]:
-        MABTuningDFFiltered = filterDF(MABTuningDF, "numPlayers", [numPlayers])
+    # Now the performance tests from and (optimised) MAB tournaments
+    MABMainDF = pd.read_csv("csvs/MABMainTestsAveraged.csv")
+    makeAccuracyPlots(MABMainDF, "numPlayers", f"{rootFolder}MAB/", True, "Number of Players", legLocs=["upper right", "upper right", "upper center", "upper right"])
 
-        makeAccuracyPlots(MABTuningDF, param, f"img/report_images/MABTuning/{numPlayers}/{param}/", True, neatParam, legLocs=["upper right", "upper right", "upper right", "upper right"])
+    for numPlayers in MABMainDF["numPlayers"].unique():
+        plotCorrectPlacesFromDF(MABMainDF, numPlayers, False, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"{rootFolder}MAB/correctPlaces{numPlayers}.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
+        plotCorrectPlacesFromDF(MABMainDF, numPlayers, True, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"{rootFolder}MAB/correctPlaces{numPlayers}wErr.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
 
-# MABTuningDF = pd.read_csv("csvs/MABTuningTestsAveraged2.csv")
+    # And do the same to make graphs that compare RR vs MAB
+    RRDF = filterDF(classicalDF, "tournament", ["RR1", "RR5", "RR25", "RR100"])
+    MABDF = MABMainDF
+    for col in MABDF.columns:
+        if col not in RRDF.columns:
+            MABDF.drop(columns=[col], inplace=True)
+    for col in RRDF.columns:
+        if col not in MABDF.columns:
+            RRDF.drop(columns=[col], inplace=True)
+    RRvsMABDF = pd.concat([RRDF, MABDF])
 
-# EGNames = []
-# for name in MABTuningDF["tournament"].unique():
-#     if name[:2] == "EG":
-#         EGNames.append(name)
+    # ####################### HMM ########################
+    # RRvsMABDF = filterDF(RRvsMABDF, "numPlayers", [16])
+    # ####################### HMM ########################
 
-# EGTuningDF = filterDF(MABTuningDF, "tournament", EGNames)
-# print(EGTuningDF, EGTuningDF["tournament"].unique(), EGTuningDF["numPlayers"].unique())
-# epsilons = []
-# for name in EGTuningDF["tournament"].values:
-#     epsilons.append(name[2:])
+    makeAccuracyPlots(RRvsMABDF, "numPlayers", f"{rootFolder}RRvsMAB/", True, "Number of Players", legLocs=["upper left", "upper right", "upper center", "upper left"])
 
-# EGTuningDF["epsilon"] = epsilons
-# EGTuningDF["tournament"] = "EG"
-
-# EGTuningDF.to_csv("csvs/MABTuningTestsAveraged2_epsilon.csv", index=False)
-# print("written")
+    for numPlayers in RRvsMABDF["numPlayers"].unique():
+        plotCorrectPlacesFromDF(RRvsMABDF, numPlayers, False, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"{rootFolder}RRvsMAB/correctPlaces{numPlayers}.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
+        plotCorrectPlacesFromDF(RRvsMABDF, numPlayers, True, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"{rootFolder}RRvsMAB/correctPlaces{numPlayers}wErr.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
 
 
-EGTuningDF = pd.read_csv("csvs/MABTuningTestsAveraged2_epsilonAveraged.csv")
+    # Now do the same for the transitivity test
+    transitivityDF = pd.read_csv("csvs/transitivityTestsAveraged.csv")
+    makeAccuracyPlots(transitivityDF, "strongTransitivity", f"{rootFolder}transitivity/", True, "Strong Transitivity?", legLocs=["lower left", "upper right", "upper right", "upper left"])
+    for numPlayers in transitivityDF["numPlayers"].unique():
+        plotCorrectPlacesFromDF(transitivityDF, numPlayers, False, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"{rootFolder}transitivity/correctPlaces{numPlayers}.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
+        plotCorrectPlacesFromDF(transitivityDF, numPlayers, True, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"{rootFolder}transitivity/correctPlaces{numPlayers}wErr.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
 
-makeAccuracyPlots(EGTuningDF, "numPlayers", f"img/report_images/MABTuning/epsilon/", True, "Number of Players", "epsilon", legLocs=["upper right", "upper right", "upper right", "upper right"])
+    # And the fixed number of matches test
+    fixedMatchNum120DF = pd.read_csv("csvs/fixedMatchesTests120Averaged.csv")
+    fixedMatchNum2400DF = pd.read_csv("csvs/fixedMatchesTests2400Averaged.csv")
+    fixedMatchNum12000DF = pd.read_csv("csvs/fixedMatchesTests12000Averaged.csv")
+    fixedMatchNum120DF["fixedMatchNum"] = 120
+    fixedMatchNum2400DF["fixedMatchNum"] = 2400
+    fixedMatchNum12000DF["fixedMatchNum"] = 12000
+    fixedMatchNumDF = pd.concat([fixedMatchNum120DF, fixedMatchNum2400DF, fixedMatchNum12000DF])
+    makeAccuracyPlots(fixedMatchNumDF, "fixedMatchNum", f"{rootFolder}fixedMatchNum/", False, "Number of Matches", legLocs=["upper right", "upper left", "upper center", "lower right"])
+
+    for num, DF in [[120, fixedMatchNum120DF], [2400, fixedMatchNum2400DF], [12000, fixedMatchNum12000DF]]:
+        for numPlayers in DF["numPlayers"].unique():
+            plotCorrectPlacesFromDF(DF, numPlayers, False, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"{rootFolder}fixedMatchNum/correctPlaces{numPlayers}_{num}.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
+            plotCorrectPlacesFromDF(DF, numPlayers, True, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"{rootFolder}fixedMatchNum/correctPlaces{numPlayers}wErr_{num}.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
+
+    # MAB Tuning Tests
+    for param, neatParam in [["explorationFolds", "Number of Exploration Folds"], ["patience", "Patience"], ["maxLockInProportion", "Maximum Lock-In Proportion"]]:
+        MABTuningDF = pd.read_csv(f"csvs/MABTuningTestsAveraged2_{param}.csv")
+
+        for numPlayers in [8, 32]:
+            MABTuningDFFiltered = filterDF(MABTuningDF, "numPlayers", [numPlayers])
+
+            makeAccuracyPlots(MABTuningDF, param, f"{rootFolder}MABTuning/{numPlayers}/{param}/", True, neatParam, legLocs=["upper right", "upper right", "upper right", "upper right"])
+
+    # MABTuningDF = pd.read_csv("csvs/MABTuningTestsAveraged2.csv")
+
+    # EGNames = []
+    # for name in MABTuningDF["tournament"].unique():
+    #     if name[:2] == "EG":
+    #         EGNames.append(name)
+
+    # EGTuningDF = filterDF(MABTuningDF, "tournament", EGNames)
+    # print(EGTuningDF, EGTuningDF["tournament"].unique(), EGTuningDF["numPlayers"].unique())
+    # epsilons = []
+    # for name in EGTuningDF["tournament"].values:
+    #     epsilons.append(name[2:])
+
+    # EGTuningDF["epsilon"] = epsilons
+    # EGTuningDF["tournament"] = "EG"
+
+    # EGTuningDF.to_csv("csvs/MABTuningTestsAveraged2_epsilon.csv", index=False)
+    # print("written")
 
 
-# And finally plot graphs comparing ALL tournaments (though not all RRs)...
-allDF = pd.concat([RRvsMABDF, sortingDF])
-makeAccuracyPlots(allDF, "numPlayers", "img/report_images/ALL/", True, "Number of Players", legLocs=["upper right", "upper left", "upper left", "upper right"])
+    EGTuningDF = pd.read_csv("csvs/MABTuningTestsAveraged2_epsilonAveraged.csv")
 
-for numPlayers in allDF["numPlayers"].unique():
-    plotCorrectPlacesFromDF(allDF, numPlayers, False, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"img/report_images/ALL/correctPlaces{numPlayers}.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
-    plotCorrectPlacesFromDF(allDF, numPlayers, True, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"img/report_images/ALL/correctPlaces{numPlayers}wErr.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
+    makeAccuracyPlots(EGTuningDF, "numPlayers", f"{rootFolder}MABTuning/epsilon/", True, "Number of Players", "epsilon", legLocs=["upper right", "upper right", "upper right", "upper right"])
 
-# ...including comparing Elo rankings to predicted rankings
-allEloDF = allDF.copy()
 
-allEloDF["rankType"] = "Elo"
-allDF["rankType"] = "Predicted (Default)"
+    # And finally plot graphs comparing ALL tournaments (though not all RRs)...
+    allDF = pd.concat([RRvsMABDF, sortingDF])
 
-allEloDF["cosine0"] = allEloDF["eloCosine0"]
-allEloDF["cosine0STD"] = allEloDF["eloCosine0STD"]
-allEloDF["cosine1"] = allEloDF["eloCosine1"]
-allEloDF["cosine1STD"] = allEloDF["eloCosine1STD"]
+    makeAccuracyPlots(allDF, "numPlayers", f"{rootFolder}ALL/", True, "Number of Players", legLocs=["upper right", "upper left", "upper left", "upper right"])
 
-allEloVSPred = pd.concat([allDF, allEloDF])
-makeAccuracyPlots(allEloVSPred, "rankType", "img/report_images/ALL_Elo/", True, "Ranking Method", legLocs=["upper right", "upper left", "upper left", "upper right"])
+    for numPlayers in allDF["numPlayers"].unique():
+        plotCorrectPlacesFromDF(allDF, numPlayers, False, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"{rootFolder}ALL/correctPlaces{numPlayers}.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
+        plotCorrectPlacesFromDF(allDF, numPlayers, True, title="Proportion Of Tests With Correctly Ranked ith Players", filename=f"{rootFolder}ALL/correctPlaces{numPlayers}wErr.png", yRange=None, xlabel="Tournament", ylabel="Proportion")
+
+    # ...including comparing Elo rankings to predicted rankings
+    allEloDF = allDF.copy()
+
+    ####################### HMM ########################
+    allEloDF = filterDF(allEloDF, "numPlayers", [16])
+    ####################### HMM ########################
+
+    allEloDF["rankType"] = "Elo"
+    allDF["rankType"] = "Predicted (Default)"
+
+    allEloDF["cosine0"] = allEloDF["eloCosine0"]
+    allEloDF["cosine0STD"] = allEloDF["eloCosine0STD"]
+    allEloDF["cosine1"] = allEloDF["eloCosine1"]
+    allEloDF["cosine1STD"] = allEloDF["eloCosine1STD"]
+
+    allEloVSPred = pd.concat([allDF, allEloDF])
+    makeAccuracyPlots(allEloVSPred, "rankType", f"{rootFolder}ALL_Elo/", True, "Ranking Method", legLocs=["upper right", "upper left", "upper left", "upper right"])
+
+    gridLines = False

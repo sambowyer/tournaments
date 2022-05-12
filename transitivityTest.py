@@ -59,7 +59,7 @@ optimalEGParams = {"explorationFolds" : 3,
                     "epsilon": 0.1}
 
 numPlayers = 16
-numTests = 150
+numTests = 250
 
 for i in range(numTests):
     start = time.time()

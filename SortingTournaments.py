@@ -125,13 +125,11 @@ class SelectionSort(SortingAlgorithm):
 class QuickSort(SortingAlgorithm):
     def runAllMatches(self):
         '''Will run through the whole tournament (i.e. algorithm) running each comparison as a match with self.getMatchResult() and self.updateStats()'''
-        # print(self.ranking)
         self.ranking = self.quicksort(self.ranking, 0, self.numPlayers-1)
 
     def quicksort(self, arr : List[int], left : int, right : int) -> List[int]:
         if left < right:
             pivotIndex, arr = self.partition(arr, left, right)
-            # print(arr)
             arr = self.quicksort(arr, left, pivotIndex-1)
             arr = self.quicksort(arr, pivotIndex+1, right)
         return arr
@@ -166,7 +164,6 @@ class QuickSort(SortingAlgorithm):
 class MergeSort(SortingAlgorithm):
     def runAllMatches(self):
         '''Will run through the whole tournament (i.e. algorithm) running each comparison as a match with self.getMatchResult() and self.updateStats()'''
-        # print(self.ranking)
         self.ranking = self.mergesort(self.ranking)
 
     def mergesort(self, arr : List[int]) -> List[int]:
@@ -200,7 +197,6 @@ class MergeSort(SortingAlgorithm):
         if len(right) != 0:
             arr += right
 
-        # print(arr)
         return arr
 
     def getNumRounds(self) -> int:
@@ -212,7 +208,6 @@ class MergeSort(SortingAlgorithm):
 class HeapSort(SortingAlgorithm):
     def runAllMatches(self):
         '''Will run through the whole tournament (i.e. algorithm) running each comparison as a match with self.getMatchResult() and self.updateStats()'''
-        # print(self.ranking)
         self.ranking = self.heapsort(self.ranking, self.numPlayers)[1:]
 
     def heapsort(self, arr : List[int], n : int) -> List[int]:

@@ -75,7 +75,7 @@ class MAB(Tournament):
         return getDominationDegreeRanking(self.winRatesLaplace)[0]
 
     def getNumRounds(self) -> int:
-        return len(self.schedule) - self.explorationFolds*(0.5*self.numPlayers*(self.numPlayers-1)) + self.explorationFolds
+        return len(self.schedule) - self.explorationFolds*(0.5*self.numPlayers*(self.numPlayers-1)) + self.explorationFolds*(self.numPlayers-1)
 
 class UCB(MAB):
     def getBoundSizes(self) -> Dict[tuple, float]:
