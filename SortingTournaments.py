@@ -155,8 +155,8 @@ class QuickSort(SortingAlgorithm):
 
         return right-len(losers)+1, arr[:left] + winners + losers + arr[right+1:]
 
-    def getNumRounds(self) -> int:
-        return int(math.log2(self.numPlayers))
+    # def getNumRounds(self) -> int:
+    #     return int(math.log2(self.numPlayers))
 
     def toString(self) -> str:
         return f"QS{self.bestOf}"
@@ -199,8 +199,8 @@ class MergeSort(SortingAlgorithm):
 
         return arr
 
-    def getNumRounds(self) -> int:
-        return int(math.log2(self.numPlayers))
+    # def getNumRounds(self) -> int:
+    #     return int(math.log2(self.numPlayers))
 
     def toString(self) -> str:
         return f"MS{self.bestOf}"

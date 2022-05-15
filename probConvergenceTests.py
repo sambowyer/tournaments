@@ -8,8 +8,11 @@ from MABTournaments import UCB, TS, EG
 from utils import *
 from typing import List, Dict
 
-folder = "img/report_images/convergence/8/"
-# folder = "img/report_images/convergence/RR/"
+
+numPlayers = 8
+
+folder = f"img/report_images/convergence/{numPlayers}/"
+# folder = f"img/report_images/convergence/RR/{numPlayers}/"
 
 def makeFitnessHistoryPlot(xvalues : List[int], yvalues : List[float], lineLabels : List[str], title : str, filename : str, ylabel="Mean Strength Error", xlim=None, legendLoc="upper right", sizeInches=[17,10], extraticks=[]):
     fig, ax = plt.subplots()
@@ -20,12 +23,12 @@ def makeFitnessHistoryPlot(xvalues : List[int], yvalues : List[float], lineLabel
         # print(i)
         ax.plot(xvalues, tournamentValues + [np.nan for j in range(maxX-len(tournamentValues))], label=lineLabels[i])
 
-    ax.set_title(title, fontsize=20)
-    ax.set_xlabel("Match Number", fontsize=18)
-    ax.set_ylabel(ylabel, fontsize=18)
-    ax.tick_params(axis='both', labelsize=14)
+    ax.set_title(title, fontsize=22)
+    ax.set_xlabel("Match Number", fontsize=20)
+    ax.set_ylabel(ylabel, fontsize=20)
+    ax.tick_params(axis='both', labelsize=16)
 
-    plt.legend(loc=legendLoc, fontsize=14, title_fontsize=14)
+    plt.legend(loc=legendLoc, fontsize=18, title_fontsize=18)
 
     if xlim is not None:
         plt.xlim(xlim[0], xlim[1])
@@ -49,9 +52,9 @@ def meanError(matrix1 : np.ndarray, matrix2 : np.ndarray, excludeDiagonal=True) 
                 count += 1
     return total/count
     
-numTests = 500
+numTests = 1000
 
-strengthsCollection = [generateStrengths(8) for _ in range(numTests)]
+strengthsCollection = [generateStrengths(numPlayers) for _ in range(numTests)]
 
 def runTournaments(tournamentConstructors, WRL=True) -> List:
     errors = {}
@@ -116,18 +119,22 @@ def runTournaments(tournamentConstructors, WRL=True) -> List:
     
     return errors, cosines, eloCosines, numMatches
 
-if folder[-3:] != "RR/":
-    U = lambda strengths:UCB(strengths, verbose=False, explorationFolds=3, patience=4, maxLockInProportion=0.25)
-    T = lambda strengths:TS(strengths, verbose=False, explorationFolds=3, patience=2, maxLockInProportion=0.25)
-    E = lambda strengths:EG(strengths, verbose=False, explorationFolds=3, patience=4, maxLockInProportion=0.05, epsilon=0.1)
+if "RR" not in folder:
+    # U = lambda strengths:UCB(strengths, verbose=False, explorationFolds=3, patience=4, maxLockInProportion=0.25)
+    # T = lambda strengths:TS(strengths, verbose=False, explorationFolds=3, patience=2, maxLockInProportion=0.25)
+    # E = lambda strengths:EG(strengths, verbose=False, explorationFolds=3, patience=4, maxLockInProportion=0.05, epsilon=0.1)
+    U = lambda strengths:UCB(strengths, verbose=False, explorationFolds=1, patience=4, maxLockInProportion=0.5)
+    T = lambda strengths:TS(strengths, verbose=False, explorationFolds=1, patience=2, maxLockInProportion=0.5)
+    E = lambda strengths:EG(strengths, verbose=False, explorationFolds=1, patience=5, maxLockInProportion=0.5, epsilon=0.2)
+    
     R = lambda strengths: RoundRobin(strengths, 3, verbose=False)
 
     errors, cosines, eloCosines, numMatches = runTournaments([U,T,E,R])
 
     maximinX = max([min(numMatches[t]) for t in numMatches])+1
-    middleX  = max([min(numMatches[t]) for t in ["UCB", "EG0.1", "RR3"]])
+    middleX  = max([min(numMatches[t]) for t in ["UCB", "EG0.2", "RR3"]])
 
-    R2 = lambda strengths: RoundRobin(strengths, math.ceil(maximinX/120), verbose=False)
+    R2 = lambda strengths: RoundRobin(strengths, math.ceil(maximinX/(0.5*numPlayers*(numPlayers-1))), verbose=False)
     errors2, cosines2, eloCosines2, numMatches2 = runTournaments([R2])
 
     errors.update(errors2)
@@ -135,7 +142,7 @@ if folder[-3:] != "RR/":
     eloCosines.update(eloCosines2)
     numMatches.update(numMatches2)
 
-    legend = ['UCB', "TS", "EG", "RR3", f"RR{math.ceil(maximinX/120)}"]
+    legend = ['UCB', "TS", "EG", "RR3", f"RR{math.ceil(maximinX/(0.5*numPlayers*(numPlayers-1)))}"]
 else:
     errors, cosines, eloCosines, numMatches = runTournaments([lambda strengths: RoundRobin(strengths, 200, verbose=False)], False)
     maximinX = max([min(numMatches[t]) for t in numMatches])+1

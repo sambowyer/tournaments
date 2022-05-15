@@ -259,9 +259,12 @@ class DoubleElimination(Tournament):
 
     def getNumRounds(self) -> int:
         if self.winnerTreeWinner in self.firstLossRoundNos:
-            return 3*int(math.log2(self.numPlayers))
+            # return 3*int(math.log2(self.numPlayers))
+            return int(2*math.log2(self.numPlayers)+2)
         else:
-            return 3*int(math.log2(self.numPlayers)) - 1
+            # return 3*int(math.log2(self.numPlayers)) - 1
+            return int(2*math.log2(self.numPlayers)+1)
+
 
     def toString(self) -> str:
         return "DE"

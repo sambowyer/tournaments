@@ -16,9 +16,9 @@ import time
 headers = ["tournament", "numPlayers", "strongTransitivity", "numMatches", "numRounds", "bestOf",
            "cosine0", "cosine1", "eloCosine0", "eloCosine1", "correctPositions", "eloCorrectPositions"]
 
-outputCSV = "csvs/fixedMatchesTests120.csv"
+outputCSV = "csvs/fixedMatchesTestsLowExp2400.csv"
 
-# writeHeaders(outputCSV, headers)
+writeHeaders(outputCSV, headers)
 
 def runTournamentForStats(strengths, tournamentConstructor, constructorArgs : List, maxNumMatches : int, strongTransitivity = False) -> Dict:
     trueRanking = getTrueRanking(strengths)
@@ -70,7 +70,7 @@ def runTournamentForStats(strengths, tournamentConstructor, constructorArgs : Li
 numPlayers = [16]
 numTests = 500
 
-numTotalMatches = 120
+numTotalMatches = 2400
 
 for i in range(numTests):
     start = time.time()
@@ -82,7 +82,7 @@ for i in range(numTests):
         strengths = generateStrengths(n)
 
         # Round Robin Tests
-        for numFolds in [1]:#,25,100]:
+        for numFolds in [1,5]:#,25,100]:
             statsCollection.append(runTournamentForStats(strengths, RoundRobin, [strengths, numFolds, lambda x: 1/(1+10**(x/400)), 1, False], numTotalMatches))
 
         # Single Elimination
@@ -97,13 +97,16 @@ for i in range(numTests):
         statsCollection.append(runTournamentForStats(strengths, Swiss, [strengths, lambda x: 1/(1+10**(x/400)), 1, False], numTotalMatches))
 
         # UCB
-        statsCollection.append(runTournamentForStats(strengths, UCB, [strengths, lambda x: 1/(1+10**(x/400)), 1, False, 3, 4, 0.25, numTotalMatches], numTotalMatches))
+        # statsCollection.append(runTournamentForStats(strengths, UCB, [strengths, lambda x: 1/(1+10**(x/400)), 1, False, 3, 4, 0.25, numTotalMatches], numTotalMatches))
+        statsCollection.append(runTournamentForStats(strengths, UCB, [strengths, lambda x: 1/(1+10**(x/400)), 1, False, 1, 4, 0.5, numTotalMatches], numTotalMatches))
 
         # TS
-        statsCollection.append(runTournamentForStats(strengths, TS, [strengths, lambda x: 1/(1+10**(x/400)), 1, False, 3, 2, 0.25, numTotalMatches], numTotalMatches))
+        # statsCollection.append(runTournamentForStats(strengths, TS, [strengths, lambda x: 1/(1+10**(x/400)), 1, False, 3, 2, 0.25, numTotalMatches], numTotalMatches))
+        statsCollection.append(runTournamentForStats(strengths, TS, [strengths, lambda x: 1/(1+10**(x/400)), 1, False, 1, 2, 0.5, numTotalMatches], numTotalMatches))
 
         # EG
-        statsCollection.append(runTournamentForStats(strengths, EG, [strengths, lambda x: 1/(1+10**(x/400)), 1, False, 3, 4, 0.05, 0.1, numTotalMatches], numTotalMatches))
+        # statsCollection.append(runTournamentForStats(strengths, EG, [strengths, lambda x: 1/(1+10**(x/400)), 1, False, 3, 4, 0.05, 0.1, numTotalMatches], numTotalMatches))
+        statsCollection.append(runTournamentForStats(strengths, EG, [strengths, lambda x: 1/(1+10**(x/400)), 1, False, 1, 5, 0.5, 0.2, numTotalMatches], numTotalMatches))
 
 
     writeStatsCollectionToCSV(statsCollection, outputCSV)

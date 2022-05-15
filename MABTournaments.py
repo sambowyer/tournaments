@@ -75,7 +75,8 @@ class MAB(Tournament):
         return getDominationDegreeRanking(self.winRatesLaplace)[0]
 
     def getNumRounds(self) -> int:
-        return len(self.schedule) - self.explorationFolds*(0.5*self.numPlayers*(self.numPlayers-1)) + self.explorationFolds*(self.numPlayers-1)
+        # return len(self.schedule) - self.explorationFolds*(0.5*self.numPlayers*(self.numPlayers-1)) + self.explorationFolds*(self.numPlayers-1)
+        return len(self.schedule) - self.explorationFolds*self.numPlayers-1
 
 class UCB(MAB):
     def getBoundSizes(self) -> Dict[tuple, float]:
@@ -119,6 +120,47 @@ class UCB(MAB):
     def toString(self) -> str:
         return "UCB"
 
+class UCB2(MAB):
+    def getBoundSizes(self) -> Dict[tuple, float]:
+        boundSizes = {}
+        for match in self.arms:
+            wins   = self.numWins[match]
+            losses = self.numLosses[match]
+            if wins + losses == 0:
+                boundSizes[match] = 0.5
+            else:
+                boundSizes[match] = math.sqrt((2*math.log(len(self.schedule)))/(1*(self.numWins[match]+self.numLosses[match])))
+        return boundSizes
+
+    def getLowerBounds(self) -> Dict[tuple, float]:
+        meanRewards = self.getMeanRewards()
+        boundSizes  = self.getBoundSizes()
+        return {x: meanRewards[x] - boundSizes[x] for x in self.arms}
+
+    def getUpperBounds(self) -> Dict[tuple, float]:
+        meanRewards = self.getMeanRewards()
+        boundSizes  = self.getBoundSizes()
+        return {x: meanRewards[x] + boundSizes[x] for x in self.arms}
+
+    def chooseArm(self) -> List[int]:
+        UCBs = self.getUpperBounds()
+        LCBs = self.getLowerBounds()
+
+        minDistTo0or1 = 1
+        potentialArms = []
+
+        for match in self.arms:
+            dist = min(1-UCBs[match], LCBs[match])
+            if dist < minDistTo0or1:
+                minDistTo0or1 == dist
+                potentialArms = [match]
+            elif dist == minDistTo0or1:
+                potentialArms.append(match)
+        
+        return random.choice(potentialArms)
+
+    def toString(self) -> str:
+        return "UCB"
 
 class TS(MAB):
     def chooseArm(self) -> List[int]:

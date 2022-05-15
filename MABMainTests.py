@@ -15,9 +15,9 @@ import time
 headers = ["tournament", "numPlayers", "strongTransitivity", "numMatches", "numRounds", "bestOf", "explorationFolds", "patience", "maxLockInProportion",
            "cosine0", "cosine1", "eloCosine0", "eloCosine1", "correctPositions", "eloCorrectPositions"]
 
-outputCSV = "csvs/MABMainTests.csv"
+outputCSV = "csvs/MABMainTestsLowExp.csv"
 
-# writeHeaders(outputCSV, headers)
+writeHeaders(outputCSV, headers)
 
 def runTournamentForStats(tournament : Tournament, strongTransitivity = False) -> Dict:
     tournament.runAllMatches()
@@ -49,21 +49,34 @@ def runTournamentForStats(tournament : Tournament, strongTransitivity = False) -
     return stats
 
 
-optimalUCBParams = {"explorationFolds" : 3,
-                    "patience": 4,
-                    "maxLockInProportion": 0.25}
+# optimalUCBParams = {"explorationFolds" : 3,
+#                     "patience": 4,
+#                     "maxLockInProportion": 0.25}
 
-optimalTSParams = {"explorationFolds" : 3,
+# optimalTSParams = {"explorationFolds" : 3,
+#                     "patience": 2,
+#                     "maxLockInProportion": 0.25}
+
+# optimalEGParams = {"explorationFolds" : 3,
+#                     "patience": 4,
+#                     "maxLockInProportion": 0.05,
+#                     "epsilon": 0.1}
+
+optimalUCBParams = {"explorationFolds" : 1,
+                    "patience": 4,
+                    "maxLockInProportion": 0.5}
+
+optimalTSParams = {"explorationFolds" : 1,
                     "patience": 2,
-                    "maxLockInProportion": 0.25}
+                    "maxLockInProportion": 0.5}
 
-optimalEGParams = {"explorationFolds" : 3,
-                    "patience": 4,
-                    "maxLockInProportion": 0.05,
-                    "epsilon": 0.1}
+optimalEGParams = {"explorationFolds" : 1,
+                    "patience": 5,
+                    "maxLockInProportion": 0.5,
+                    "epsilon": 0.2}
 
 numPlayers = [4,8,16,32,64] 
-numTests = 996
+numTests = 1000
 
 for i in range(numTests):
     start = time.time()
