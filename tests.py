@@ -459,6 +459,111 @@ def UCBTest():
     makeDoubledBarChart(validTournamentNames, predRankCosines, eloRankCosines, "Predicted Ranking", "Elo Ranking", f"Average cosine similarity to true ranking divided by mean number of matches in tournament", "Tournament", "Similarity / # Matches", "img/UCBTest/cosineScaledWithStdBars.png", yErrors=[cosineStdsScaled, eloCosineStdsScaled])
     makeDoubledBarChart(validTournamentNames, cosineStdsScaled, eloCosineStdsScaled, "Predicted Ranking", "Elo Ranking", f"Standard deviation of average cosine similarity to true ranking divided by mean number of matches in tournament", "Tournament", "Similarity / # Matches", "img/UCBTest/cosineScaledStd.png")
 
+def RRDomTest():
+    n = 16
+    numGames = 100
+
+    tournamentNames = ["RR1", "RR1Dom", "RR10", "RR10Dom", "RR100", "RR100Dom"]
+    stats = {}
+    for t in tournamentNames:
+        stats[t] = {"correctPlaces" : np.zeros(n), "cosine" : 0, "cosineSq" : 0, "eloCorrectPlaces" : np.zeros(n), "eloCosine" : 0, "eloCosineSq" : 0,  "numMatches" : 0}
+
+    for runNum in range(numGames):
+        strengths = generateStrengths(n)
+        trueRanking = getTrueRanking(strengths)
+
+        R = RoundRobin(strengths, 1)
+        D = RRDom(strengths, 1)
+        R10 = RoundRobin(strengths, 10)
+        D10 = RRDom(strengths, 10)
+        R100 = RoundRobin(strengths, 100)
+        D100 = RRDom(strengths, 100)
+
+        tournaments = [R, D, R10, D10, R100, D100]
+
+        for i, tournament in enumerate(tournaments):
+            tournament.verbose = False
+            tournament.runAllMatches()
+
+            predictedRanking = tournament.getRanking()
+            eloRanking, _    = tournament.getEloRanking()
+            
+            stats[tournamentNames[i]]["numMatches"]  += len(tournament.schedule)
+            cosineSim = getRankingSimilarity(trueRanking, predictedRanking, numSamples=30, False)#[0]
+            eloCosineSim = getRankingSimilarity(trueRanking, eloRanking, numSamples=30, False)#[0]
+            stats[tournamentNames[i]]["cosine"]      += cosineSim
+            stats[tournamentNames[i]]["eloCosine"]   += eloCosineSim
+            stats[tournamentNames[i]]["cosineSq"]    += cosineSim**2
+            stats[tournamentNames[i]]["eloCosineSq"] += eloCosineSim**2
+            stats[tournamentNames[i]]["correctPlaces"]    += proportionCorrectPositionsVector(trueRanking, predictedRanking)
+            stats[tournamentNames[i]]["eloCorrectPlaces"] += proportionCorrectPositionsVector(trueRanking, eloRanking)
+            # if i==2:
+            #     print(stats[tournamentNames[i]]["correctPlaces"], stats[tournamentNames[i]]["eloCorrectPlaces"])
+
+            # for j, place in enumerate(trueRanking):
+            #     if predictedRanking[j] == place:
+            #         stats[tournamentNames[i]]["correctPlaces"][j] += 1
+            #     if eloRanking[j] == place:
+            #         stats[tournamentNames[i]]["eloCorrectPlaces"][j] += 1
+            print(tournamentNames[i])
+        
+        print(f"Run {runNum+1}/{numGames } done.")
+
+    print()
+
+    for i, tournament in enumerate(tournaments):
+        stats[tournamentNames[i]]["numMatches"] /= numGames
+        stats[tournamentNames[i]]["cosine"]     /= numGames
+        stats[tournamentNames[i]]["eloCosine"]  /= numGames
+        stats[tournamentNames[i]]["cosineSq"]     /= numGames
+        stats[tournamentNames[i]]["eloCosineSq"]  /= numGames
+        stats[tournamentNames[i]]["correctPlaces"]    /= numGames
+        stats[tournamentNames[i]]["eloCorrectPlaces"] /= numGames
+        
+        # for j in range(n):
+        #     stats[tournamentNames[i]]["correctPlaces"][j]    /= numGames
+        #     stats[tournamentNames[i]]["eloCorrectPlaces"][j] /= numGames
+
+        # print(f"{tournamentNames[i]}\n {stats[tournamentNames[i]]}\n")
+
+    
+    validTournamentNames = ["RR1", "RR1Dom", "RR10", "RR10Dom", "RR100", "RR100Dom"]
+
+    cosineStds    = [math.sqrt(stats[t]["cosineSq"]-stats[t]["cosine"]**2) for t in validTournamentNames]
+    eloCosineStds = [math.sqrt(stats[t]["eloCosineSq"]-stats[t]["eloCosine"]**2) for t in validTournamentNames]
+
+    cosineStdsScaled    = [math.sqrt(stats[t]["cosineSq"]/stats[t]["numMatches"]-(stats[t]["cosine"]/stats[t]["numMatches"])**2) for t in validTournamentNames]
+    eloCosineStdsScaled = [math.sqrt(stats[t]["eloCosineSq"]/stats[t]["numMatches"]-(stats[t]["eloCosine"]/stats[t]["numMatches"])**2) for t in validTournamentNames]
+
+    # print(cosineStds, eloCosineStds)
+
+    # Make bar charts for all the correct-place-number stats
+    for i in range(n):
+        predRankStats = [stats[t]["correctPlaces"][i] for t in validTournamentNames]
+        eloRankStats  = [stats[t]["eloCorrectPlaces"][i] for t in validTournamentNames]
+        makeDoubledBarChart(validTournamentNames, predRankStats, eloRankStats, "Predicted Ranking", "Elo Ranking", f"Proportion of players correctly ranked #{i+1}", "Tournament", "Proportion", f"img/RRDom/correctRank{i+1}.png", yRange=[0,1])
+
+    # Make cosine distance graphs
+    predRankCosines = [stats[t]["cosine"] for t in validTournamentNames]
+    eloRankCosines  = [stats[t]["eloCosine"] for t in validTournamentNames]
+    makeDoubledBarChart(validTournamentNames, predRankCosines, eloRankCosines, "Predicted Ranking", "Elo Ranking", f"Average cosine similarity to true ranking", "Tournament", "Similarity", "img/RRDom/cosine.png", yRange=[0.99*min([min(predRankCosines), min(eloRankCosines)]),1.01])
+    makeDoubledBarChart(validTournamentNames, predRankCosines, eloRankCosines, "Predicted Ranking", "Elo Ranking", f"Average cosine similarity to true ranking", "Tournament", "Similarity", "img/RRDom/cosineWithStdBars.png", yRange=[0.99*min([min(predRankCosines), min(eloRankCosines)]),1.01], yErrors=[cosineStds, eloCosineStds])
+    makeDoubledBarChart(validTournamentNames, cosineStds, eloCosineStds, "Predicted Ranking", "Elo Ranking", f"Standard deviation of similarity to true ranking", "Tournament", "Similarity", "img/RRDom/cosineStd.png")
+
+
+    # Make numMatches graphs
+    numMatches = [stats[t]["numMatches"] for t in validTournamentNames]
+    makeBarChart(validTournamentNames, [stats[t]["numMatches"] for t in validTournamentNames], "Average number of matches played per tournament", "Tournament", "# Matches", "img/RRDom/numMatches.png")
+
+    # print(numMatches)
+
+    # Make scaled cosine distance graphs
+    predRankCosines = [predRankCosines[i]/numMatches[i] for i in range(len(validTournamentNames))]
+    eloRankCosines  = [eloRankCosines[i]/numMatches[i] for i in range(len(validTournamentNames))]
+    makeDoubledBarChart(validTournamentNames, predRankCosines, eloRankCosines, "Predicted Ranking", "Elo Ranking", f"Average cosine similarity to true ranking divided by mean number of matches in tournament", "Tournament", "Similarity / # Matches", "img/RRDom/cosineScaled.png")
+    makeDoubledBarChart(validTournamentNames, predRankCosines, eloRankCosines, "Predicted Ranking", "Elo Ranking", f"Average cosine similarity to true ranking divided by mean number of matches in tournament", "Tournament", "Similarity / # Matches", "img/RRDom/cosineScaledWithStdBars.png", yErrors=[cosineStdsScaled, eloCosineStdsScaled])
+    makeDoubledBarChart(validTournamentNames, cosineStdsScaled, eloCosineStdsScaled, "Predicted Ranking", "Elo Ranking", f"Standard deviation of average cosine similarity to true ranking divided by mean number of matches in tournament", "Tournament", "Similarity / # Matches", "img/RRDom/cosineScaledStd.png")
+
 
 # runTournamentTest()
 # prelimTest()
@@ -496,4 +601,5 @@ def UCBTest():
 # runTournament(SW)
 
 
-UCBTest()
+# UCBTest()
+RRDomTest()

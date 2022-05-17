@@ -160,7 +160,11 @@ def averageOutCSV(inputCSV : str, outputCSV : str, identifyingHeaders : List, he
 # averageOutCSV("csvs/MABMainTests.csv", "csvs/MABMainTestsAveraged_NO_HORIZON.csv", ["tournament", "numPlayers"], ["numMatches", "numRounds", "cosine0", "cosine1", "eloCosine0", "eloCosine1"], excludeFunc=lambda x: x["numMatches"] > 50000)# 100*x["numPlayers"]*(x["numPlayers"]-1))
 
 # averageOutCSV("csvs/MABMainTestsLowExp.csv", "csvs/MABMainTestsLowExpAveraged.csv", ["tournament", "numPlayers"], ["numMatches", "numRounds", "cosine0", "cosine1", "eloCosine0", "eloCosine1"])
+# averageOutCSV("csvs/MABMainTestsLowExp.csv", "csvs/MABMainTestsLowExpNoTS32Averaged.csv", ["tournament", "numPlayers"], ["numMatches", "numRounds", "cosine0", "cosine1", "eloCosine0", "eloCosine1"], excludeFunc=lambda x: x["numMatches"] >= 100*x["numPlayers"]*(x["numPlayers"]-1) and x["tournament"] == "TS")
 # averageOutCSV("csvs/transitivityTestsLowExp.csv", "csvs/transitivityTestsLowExpAveraged.csv", ["tournament", "numPlayers", "strongTransitivity"], ["numMatches", "numRounds", "cosine0", "cosine1", "eloCosine0", "eloCosine1"])
-averageOutCSV("csvs/fixedMatchesTestsLowExp12000.csv", "csvs/fixedMatchesTestsLowExp12000Averaged.csv", ["tournament", "numPlayers"], ["numMatches", "numRounds", "cosine0", "cosine1", "eloCosine0", "eloCosine1"], fixRounds=False)
-averageOutCSV("csvs/fixedMatchesTestsLowExp2400.csv", "csvs/fixedMatchesTestsLowExp2400Averaged.csv", ["tournament", "numPlayers"], ["numMatches", "numRounds", "cosine0", "cosine1", "eloCosine0", "eloCosine1"], fixRounds=False)
-averageOutCSV("csvs/fixedMatchesTestsLowExp120.csv", "csvs/fixedMatchesTestsLowExp120Averaged.csv", ["tournament", "numPlayers"], ["numMatches", "numRounds", "cosine0", "cosine1", "eloCosine0", "eloCosine1"], fixRounds=False)
+# averageOutCSV("csvs/fixedMatchesTestsLowExp12000.csv", "csvs/fixedMatchesTestsLowExp12000Averaged.csv", ["tournament", "numPlayers"], ["numMatches", "numRounds", "cosine0", "cosine1", "eloCosine0", "eloCosine1"], fixRounds=False)
+# averageOutCSV("csvs/fixedMatchesTestsLowExp2400.csv", "csvs/fixedMatchesTestsLowExp2400Averaged.csv", ["tournament", "numPlayers"], ["numMatches", "numRounds", "cosine0", "cosine1", "eloCosine0", "eloCosine1"], fixRounds=False)
+# averageOutCSV("csvs/fixedMatchesTestsLowExp120.csv", "csvs/fixedMatchesTestsLowExp120Averaged.csv", ["tournament", "numPlayers"], ["numMatches", "numRounds", "cosine0", "cosine1", "eloCosine0", "eloCosine1"], fixRounds=False)
+
+
+averageOutCSV("csvs/RRDomTest1000.csv", "csvs/RRDomTest1000Averaged.csv", ["tournament", "numPlayers"], ["numMatches", "numRounds", "cosine0", "cosine1", "eloCosine0", "eloCosine1"])

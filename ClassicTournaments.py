@@ -312,3 +312,10 @@ class Swiss(Tournament):
 
     def toString(self) -> str:
         return "SW"
+
+class RRDom(RoundRobin):
+    def getRanking(self) -> List[List[int]]:
+        return getDominationDegreeRanking(self.winRates)[0]
+
+    def toString(self) -> str:
+        return f"RR{self.numFolds}Dom"
